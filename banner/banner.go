@@ -1,0 +1,45 @@
+package banner
+
+import (
+	"fmt"
+)
+
+const (
+	colorReset = "\033[0m"
+	colorBlue  = "\033[38;5;75m"
+	colorCyan  = "\033[38;5;81m"
+	colorGray  = "\033[38;5;245m"
+	colorBold  = "\033[1m"
+)
+
+func PrintDev(version, host string, port int) {
+	printBanner(version, host, port, true)
+}
+
+func PrintProd(version, host string, port int) {
+	printBanner(version, host, port, false)
+}
+
+func printBanner(version, host string, port int, isDev bool) {
+	asciiArt := `
+  ███████╗██╗  ██╗██╗  ██╗███████╗███╗   ██╗
+  ██╔════╝██║ ██╔╝██║ ██╔╝██╔════╝████╗  ██║
+  █████╗  █████╔╝ █████╔╝ █████╗  ██╔██╗ ██║
+  ██╔══╝  ██╔═██╗ ██╔═██╗ ██╔══╝  ██║╚██╗██║
+  ███████╗██║  ██╗██║  ██╗███████╗██║ ╚████║
+  ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝`
+
+	fmt.Println(colorBlue + asciiArt + colorReset)
+	fmt.Printf("  %sEkken %s%s%s\n", colorBold, colorBlue, version, colorReset)
+	fmt.Println()
+
+	if isDev {
+		fmt.Printf("  %s● %sMode:    %sDevelopment%s\n", colorBlue, colorBold, colorReset, colorReset)
+		fmt.Println()
+		fmt.Printf("  %s➜ %s API: %shttp://%s:%d%s\n", colorCyan, colorBold, colorReset, host, port, colorReset)
+		fmt.Printf("  %s➜ %s UI:  %scd ui && npm run dev%s\n", colorCyan, colorBold, colorGray, colorReset)
+	} else {
+		fmt.Printf("  %s➜ %s URL: %shttp://%s:%d%s\n", colorCyan, colorBold, colorReset, host, port, colorReset)
+	}
+	fmt.Println()
+}

@@ -1,0 +1,89 @@
+/* UI2 PREMIUM MOCKUP REPLICA - INSTANT MODE */
+:root {
+  --el-bg-color-page: #f0f2f5;
+  --el-bg-color: #ffffff;
+  --el-text-color-primary: #1f2329;
+  --el-text-color-secondary: #606266;
+  --el-border-color-lighter: #ebeef5;
+
+  /* Brand */
+  --el-color-primary: #409eff;
+  --el-color-primary-light-9: #eff6ff;
+
+  /* UI2 Specific Tokens */
+  --text-main: #1f2329;
+  --border-light: #f0f0f0;
+
+  /* Layout */
+  --page-padding: 24px;
+  --card-radius: 24px;
+  --sidebar-width: 260px;
+}
+
+/* DARK MODE OVERRIDES */
+html.dark {
+  --el-bg-color-page: #0b0e14;
+  --el-bg-color: #151921;
+  --el-bg-color-overlay: #1e2535;
+  --el-fill-color-blank: #12151c;
+  --el-fill-color-light: #181f2e;
+  --el-text-color-primary: #e5eaf3;
+  --el-text-color-secondary: #a3a6ad;
+  --el-border-color: #2d3139;
+  --el-border-color-light: #2d3448;
+  --el-border-color-lighter: #2d3448;
+  --el-color-primary-light-9: rgba(64, 158, 255, 0.15);
+  --text-main: #e5eaf3;
+  --border-light: #2d3139;
+}
+
+/* ABSOLUTE TRANSITION KILLER - NO EXCEPTIONS */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+
+}
+
+body {
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+  background-color: var(--el-bg-color-page);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+}
+
+/* Floating Card Base */
+.floating-card {
+  background: var(--el-bg-color);
+  border-radius: var(--card-radius);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid transparent;
+}
+
+html.dark .floating-card {
+  border: 1px solid var(--border-light) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Sidebar Transition */
+.sidebar-transition {
+  transition: width 0.3s ease, opacity 0.3s ease, max-width 0.3s ease !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--el-border-color-lighter);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
