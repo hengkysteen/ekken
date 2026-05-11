@@ -1,0 +1,97 @@
+{
+  "id": "e2e-test-ekken",
+  "name": "E2E Test: Open Settings and Screenshot",
+  "created_by": "system",
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "type": "timer",
+      "config": {
+        "action": "manual"
+      }
+    },
+    {
+      "id": "chrome-1",
+      "type": "google_chrome",
+      "config": {
+        "action": "launch",
+        "headless": true,
+        "port": 9222
+      }
+    },
+    {
+      "id": "browser-1",
+      "type": "chromedp",
+      "config": {
+        "action": "navigate",
+        "url": "http://localhost:3033"
+      }
+    },
+    {
+      "id": "browser-2",
+      "type": "chromedp",
+      "config": {
+        "action": "click",
+        "selector": "//span[contains(.,\"Settings\")]",
+        "selector_type": "xpath"
+      }
+    },
+    {
+      "id": "delay-1",
+      "type": "delay",
+      "config": {
+        "action": "seconds",
+        "duration": 1.0
+      }
+    },
+    {
+      "id": "browser-3",
+      "type": "chromedp",
+      "config": {
+        "action": "screenshot",
+        "path": "tests/dogfooding/data/screenshot_settings.png",
+        "full_page": true
+      }
+    },
+    {
+      "id": "chrome-terminate",
+      "type": "google_chrome",
+      "config": {
+        "action": "terminate",
+        "port": 9222
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "trigger-1",
+      "target": "chrome-1",
+      "sourceHandle": "success"
+    },
+    {
+      "source": "chrome-1",
+      "target": "browser-1",
+      "sourceHandle": "success"
+    },
+    {
+      "source": "browser-1",
+      "target": "browser-2",
+      "sourceHandle": "success"
+    },
+    {
+      "source": "browser-2",
+      "target": "delay-1",
+      "sourceHandle": "success"
+    },
+    {
+      "source": "delay-1",
+      "target": "browser-3",
+      "sourceHandle": "success"
+    },
+    {
+      "source": "browser-3",
+      "target": "chrome-terminate",
+      "sourceHandle": "success"
+    }
+  ]
+}
