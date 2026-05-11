@@ -1,4 +1,4 @@
-.PHONY: build build-all ui tag
+.PHONY: build build-all ui clean tag
 
 BINARY_NAME=ekken
 GOOS := $(shell go env GOOS)
@@ -6,15 +6,17 @@ GOARCH := $(shell go env GOARCH)
 LDFLAGS := -ldflags="-s -w -X 'ekken/internal/config.mode=production'"
 VERSION := $(shell grep -E 'var buildVersion =' internal/config/config.go | awk -F'"' '{print $$2}')
 
-build:
+clean:
 	rm -rf dist/ ui/dist/
+
+ui:
 	cd ui && npm ci && npm run build
+
+build: clean ui
 	mkdir -p dist
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -tags production $(LDFLAGS) -o dist/$(BINARY_NAME) .
 
-build-all:
-	rm -rf dist/ ui/dist/
-	cd ui && npm ci && npm run build
+build-all: clean ui
 	mkdir -p dist
 	GOOS=windows GOARCH=amd64 go build -tags production $(LDFLAGS) -o dist/$(BINARY_NAME)-windows.exe .
 	GOOS=linux   GOARCH=amd64 go build -tags production $(LDFLAGS) -o dist/$(BINARY_NAME)-linux .
