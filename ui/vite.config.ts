@@ -32,6 +32,13 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
+      rollupOptions: {
+        onwarn(warning, warn) {
+          // Suppress "PURE" annotation warnings from libraries like @vueuse
+          if (warning.code === 'INVALID_ANNOTATION') return
+          warn(warning)
+        },
+      },
     },
     test: {
       globals: true,
