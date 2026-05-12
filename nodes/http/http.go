@@ -14,7 +14,7 @@ import (
 )
 
 type HTTPNode struct {
-	Config map[string]any
+	Action node.NodeAction
 	Output any
 }
 
@@ -22,12 +22,13 @@ func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
 		NodeSpec: node.NodeSpec{
 			NodeMetadata: node.NodeMetadata{
-				Type:  "http",
-				Tags:  []string{"Network"},
-				Label: "HTTP",
-				Icon:  "https://www.svgrepo.com/show/221325/http.svg",
+				Type:        "http",
+				Tags:        []string{"Network"},
+				Label:       "HTTP",
+				Icon:        "https://www.svgrepo.com/show/221325/http.svg",
+				Description: "Call HTTP endpoints with custom methods, headers, and body.",
 			},
-			Description:   "Call HTTP endpoints with custom methods, headers, and body.",
+
 			DefaultAction: "http_request",
 			Actions: []node.NodeAction{
 				{
@@ -51,19 +52,19 @@ func init() {
 					},
 				},
 			},
-			Outputs: []node.NodeOutputDef{
+			Outputs: []node.HandleEdge{
 				{Key: "success", Label: "Success", Tone: "success"},
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(config map[string]any, _ []node.Node) node.NodeExecutor {
-			return &HTTPNode{Config: config}
+		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+			return &HTTPNode{Action: action}
 		},
 	})
 }
 
 func (n *HTTPNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	action, _ := n.Config["action"].(string)
+	action := n.Action.Key
 	if action == "" {
 		action = "http_request"
 	}
@@ -79,18 +80,18 @@ func (n *HTTPNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, err
 }
 
 func (n *HTTPNode) runRequest(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	url, _ := n.Config["url"].(string)
+	url, _ := node.FieldValue(n.Action, "url").(string)
 	if url == "" {
 		return node.NodeExecutionResult{}, fmt.Errorf("URL is required")
 	}
 
-	method, _ := n.Config["method"].(string)
+	method, _ := node.FieldValue(n.Action, "method").(string)
 	if method == "" {
 		method = "GET"
 	}
-	headersRaw, _ := n.Config["headers"].(string)
-	bodyTemplate, _ := n.Config["body"].(string)
-	timeoutSec, _ := n.Config["timeout"].(float64)
+	headersRaw, _ := node.FieldValue(n.Action, "headers").(string)
+	bodyTemplate, _ := node.FieldValue(n.Action, "body").(string)
+	timeoutSec, _ := node.FieldValue(n.Action, "timeout").(float64)
 	if timeoutSec <= 0 {
 		timeoutSec = 60
 	}

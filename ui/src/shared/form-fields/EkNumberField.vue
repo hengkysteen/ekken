@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ElInputNumber } from 'element-plus'
-import EkFormItem from '../EkFormItem.vue'
+import EkFormItem from './EkFormItem.vue'
 
 interface FieldDef {
   key: string

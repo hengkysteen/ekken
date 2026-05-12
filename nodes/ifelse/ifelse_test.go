@@ -228,11 +228,11 @@ func TestIfElseNode_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := &IfElseNode{
-				Config: map[string]interface{}{
+				Action: node.ActionFromMap(map[string]interface{}{
 					"operand_1": tt.operand1,
 					"operator":  tt.operator,
 					"operand_2": tt.operand2,
-				},
+				}),
 			}
 
 			vars := tt.variables
@@ -264,11 +264,11 @@ func TestIfElseNode_Execute(t *testing.T) {
 
 func TestIfElseNode_UnknownOperator(t *testing.T) {
 	n := &IfElseNode{
-		Config: map[string]interface{}{
+		Action: node.ActionFromMap(map[string]interface{}{
 			"operand_1": "hello",
 			"operator":  "invalid_op",
 			"operand_2": "world",
-		},
+		}),
 	}
 
 	ctx := &node.NodeContext{

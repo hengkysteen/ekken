@@ -1,5 +1,5 @@
 import { type Component } from 'vue'
-import AutoNodeForm from '@shared/components/ek/EkAutoNodeForm.vue'
+import AutoNodeForm from '../components/EkAutoNodeForm.vue'
 import HttpNodeForm from './http/HttpNodeForm.vue'
 
 type NodeResolver = (type: string) => Component | undefined

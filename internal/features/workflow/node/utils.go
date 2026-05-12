@@ -1,6 +1,7 @@
 package node
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
@@ -21,7 +22,26 @@ func ParseTemplate(template string, variables map[string]interface{}) string {
 	for k, v := range variables {
 		// Create regex that allows optional spaces: {{\s*key\s*}}
 		re := regexp.MustCompile(fmt.Sprintf(`\{\{\s*%s\s*\}\}`, regexp.QuoteMeta(k)))
-		template = re.ReplaceAllString(template, fmt.Sprintf("%v", v))
+		
+		// Convert value to string - use JSON for complex types
+		var strVal string
+		switch val := v.(type) {
+		case string:
+			strVal = val
+		case int, int64, float64, bool:
+			strVal = fmt.Sprintf("%v", val)
+		case nil:
+			strVal = ""
+		default:
+			// For maps, slices, and other complex types, use JSON
+			if jsonBytes, err := json.Marshal(val); err == nil {
+				strVal = string(jsonBytes)
+			} else {
+				strVal = fmt.Sprintf("%v", val)
+			}
+		}
+		
+		template = re.ReplaceAllString(template, strVal)
 	}
 
 	// Step 3: Replace environment variables: {{env.KEY}} or {{ env.KEY }}
@@ -147,4 +167,37 @@ func toNumber(val interface{}) (float64, error) {
 	default:
 		return 0, fmt.Errorf("cannot convert %T to number", val)
 	}
+}
+
+// FieldValue returns the Value of a field by key from a NodeAction.
+// Falls back to Default if Value is nil.
+func FieldValue(action NodeAction, key string) any {
+	for _, f := range action.Fields {
+		if f.Key == key {
+			if f.Value != nil {
+				return f.Value
+			}
+			return f.Default
+		}
+	}
+	return nil
+}
+
+// ActionFromMap creates a NodeAction with fields populated from a map (for testing).
+func ActionFromMap(m map[string]any) NodeAction {
+	action := NodeAction{}
+	
+	// Extract action key if present
+	if actionKey, ok := m["action"].(string); ok {
+		action.Key = actionKey
+	}
+	
+	// Convert map to fields
+	fields := make([]NodeField, 0, len(m))
+	for k, v := range m {
+		fields = append(fields, NodeField{Key: k, Value: v})
+	}
+	action.Fields = fields
+	
+	return action
 }

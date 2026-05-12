@@ -9,19 +9,20 @@ import (
 )
 
 type IfElseNode struct {
-	Config map[string]interface{}
+	Action node.NodeAction
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
 		NodeSpec: node.NodeSpec{
 			NodeMetadata: node.NodeMetadata{
-				Type:  "ifelse",
-				Tags:  []string{"Conditions"},
-				Label: "If Else",
-				Icon:  "https://api.iconify.design/mdi/call-split.svg",
+				Type:        "ifelse",
+				Tags:        []string{"Conditions"},
+				Label:       "If Else",
+				Icon:        "https://api.iconify.design/mdi/call-split.svg",
+				Description: "Evaluate a condition with two outcomes (True/False).",
 			},
-			Description:   "Evaluate a condition with two outcomes (True/False).",
+
 			DefaultAction: "if_else",
 			Actions: []node.NodeAction{
 				{
@@ -44,30 +45,30 @@ func init() {
 						}},
 						{Key: "operand_2", Type: "string", Label: "Operand 2"},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
-							{Key: "operand_1", Component: "input", Flex: 8, FormOptions: map[string]any{"helper": "Value to compare", "placeholder": "e.g. {{variable}}"}},
-							{Key: "operator", Component: "select", Flex: 8, FormOptions: map[string]any{"helper": "Select comparison method"}},
-							{Key: "operand_2", Component: "input", Flex: 8, FormOptions: map[string]any{"helper": "Value to compare against", "placeholder": "e.g. value"}},
+							{Key: "operand_1", Component: "input", Flex: 8, Options: map[string]any{"helper": "Value to compare", "placeholder": "e.g. {{variable}}"}},
+							{Key: "operator", Component: "select", Flex: 8, Options: map[string]any{"helper": "Select comparison method"}},
+							{Key: "operand_2", Component: "input", Flex: 8, Options: map[string]any{"helper": "Value to compare against", "placeholder": "e.g. value"}},
 						},
 					},
 				},
 			},
-			Outputs: []node.NodeOutputDef{
+			Outputs: []node.HandleEdge{
 				{Key: "true", Label: "True", Tone: "success"},
 				{Key: "false", Label: "False", Tone: "warning"},
 			},
 		},
-		ExecutorFactory: func(config map[string]interface{}, _ []node.Node) node.NodeExecutor {
-			return &IfElseNode{Config: config}
+		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+			return &IfElseNode{Action: action}
 		},
 	})
 }
 
 func (n *IfElseNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	op1Raw, _ := n.Config["operand_1"].(string)
-	operator, _ := n.Config["operator"].(string)
-	op2Raw, _ := n.Config["operand_2"].(string)
+	op1Raw, _ := node.FieldValue(n.Action, "operand_1").(string)
+	operator, _ := node.FieldValue(n.Action, "operator").(string)
+	op2Raw, _ := node.FieldValue(n.Action, "operand_2").(string)
 
 	if operator == "" {
 		operator = "=="

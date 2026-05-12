@@ -187,8 +187,8 @@ function onConfigureNode(nodeData: any) {
   showConfigModal.value = true
 }
 
-function onConfigSave({ id, config, response_var, label }: any) {
-  editor.updateNodeConfig(id, { config, response_var, label })
+function onConfigSave({ id, action, label }: any) {
+  editor.updateNodeAction(id, { action, label })
 }
 
 function onDeleteNode({ id }: any) {
@@ -226,8 +226,7 @@ function onPickNode(nodeDef: any) {
         tags: nodeDef.tags,
         icon: nodeDef.icon,
         position: viewportCenter.value,
-        config: nodeDef.config,
-        response_var: nodeDef.response_var,
+        action: nodeDef.action,
         sourceType: nodeDef.sourceType,
         name: nodeDef.name
       })

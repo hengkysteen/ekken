@@ -67,10 +67,14 @@ export function useWorkflowApi(
   }
 
   async function saveWorkflowSilent(originalId: string) {
-    const payload = buildSavePayload()
-    if (!payload) return
-    const response = await api.updateWorkflow(originalId, payload)
-    workflow.value = response
+    try {
+      const payload = buildSavePayload()
+      if (!payload) return
+      const response = await api.updateWorkflow(originalId, payload)
+      workflow.value = response
+    } catch (err) {
+      console.warn('Silent save failed:', err)
+    }
   }
 
   async function handleWorkflowRename(oldId: string, newId: string) {

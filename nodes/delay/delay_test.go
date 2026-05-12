@@ -40,9 +40,9 @@ func TestDelayNode_Execute(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := &DelayNode{
-				Config: map[string]any{
+				Action: node.ActionFromMap(map[string]any{
 					"duration": tt.duration,
-				},
+				}),
 			}
 
 			ctx := &node.NodeContext{
@@ -82,9 +82,9 @@ func TestDelayNode_Execute(t *testing.T) {
 
 func TestDelayNode_InvalidDuration(t *testing.T) {
 	n := &DelayNode{
-		Config: map[string]any{
+		Action: node.ActionFromMap(map[string]any{
 			"duration": "invalid",
-		},
+		}),
 	}
 
 	ctx := &node.NodeContext{
@@ -103,9 +103,9 @@ func TestDelayNode_InvalidDuration(t *testing.T) {
 
 func TestDelayNode_Cancellation(t *testing.T) {
 	n := &DelayNode{
-		Config: map[string]any{
+		Action: node.ActionFromMap(map[string]any{
 			"duration": 5.0, // 5 seconds
-		},
+		}),
 	}
 
 	stopChan := make(chan struct{})

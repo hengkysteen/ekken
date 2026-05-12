@@ -20,7 +20,7 @@ type Session struct {
 }
 
 type BrowserNode struct {
-	Config       map[string]interface{}
+	Action       node.NodeAction
 	Output       interface{}
 	AllocatorCtx context.Context
 }
@@ -29,15 +29,16 @@ func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
 		NodeSpec: node.NodeSpec{
 			NodeMetadata: node.NodeMetadata{
-				Type:  "chromedp",
-				Tags:  []string{"Web Automation"},
-				Label: "Chromedp",
-				Icon:  "https://www.svgrepo.com/show/522006/browser.svg",
+				Type:        "chromedp",
+				Tags:        []string{"Web Automation"},
+				Label:       "Chromedp",
+				Icon:        "https://www.svgrepo.com/show/522006/browser.svg",
+				Description: "Navigate, click, screenshot from a Chrome tab.",
 				DependsOn: []node.NodeDependency{
 					{Node: "google_chrome", Action: "launch"},
 				},
 			},
-			Description:   "Navigate, click, screenshot from a Chrome tab.",
+
 			DefaultAction: "navigate",
 			Actions: []node.NodeAction{
 				{
@@ -47,9 +48,9 @@ func init() {
 					Fields: []node.NodeField{
 						{Key: "url", Type: "string", Required: true, Label: "URL"},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
-							{Key: "url", Component: "input", Flex: 24, FormOptions: map[string]any{"placeholder": "https://example.com"}},
+							{Key: "url", Component: "input", Flex: 24, Options: map[string]any{"placeholder": "https://example.com"}},
 						},
 					},
 				},
@@ -64,10 +65,10 @@ func init() {
 						}},
 						{Key: "selector", Type: "string", Required: true, Label: "Selector"},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
 							{Key: "selector_type", Component: "select", Flex: 8},
-							{Key: "selector", Component: "input", Flex: 16, FormOptions: map[string]any{"placeholder": "button.submit-btn"}},
+							{Key: "selector", Component: "input", Flex: 16, Options: map[string]any{"placeholder": "button.submit-btn"}},
 						},
 					},
 				},
@@ -79,10 +80,10 @@ func init() {
 						{Key: "path", Type: "string", Required: true, Label: "Output Path"},
 						{Key: "full_page", Type: "boolean", Default: false, Label: "Full Page"},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
-							{Key: "path", Component: "input", Flex: 18, FormOptions: map[string]any{"placeholder": "/path/to/screenshot.png"}},
-							{Key: "full_page", Component: "switch", Flex: 6, FormOptions: map[string]any{"helper": "Capture full scrollable page"}},
+							{Key: "path", Component: "input", Flex: 18, Options: map[string]any{"placeholder": "/path/to/screenshot.png"}},
+							{Key: "full_page", Component: "switch", Flex: 6, Options: map[string]any{"helper": "Capture full scrollable page"}},
 						},
 					},
 				},
@@ -99,14 +100,14 @@ func init() {
 						{Key: "value", Type: "string", Required: true, Label: "Value to Type"},
 						{Key: "press_enter", Type: "boolean", Default: false, Label: "Press Enter"},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
 							{Key: "selector_type", Component: "select", Flex: 8},
-							{Key: "selector", Component: "input", Flex: 16, FormOptions: map[string]any{"placeholder": "input[name='search']"}},
+							{Key: "selector", Component: "input", Flex: 16, Options: map[string]any{"placeholder": "input[name='search']"}},
 						},
 						{
-							{Key: "value", Component: "input", Flex: 18, FormOptions: map[string]any{"placeholder": "Hello world"}},
-							{Key: "press_enter", Component: "switch", Flex: 6, FormOptions: map[string]any{"helper": "After typing"}},
+							{Key: "value", Component: "input", Flex: 18, Options: map[string]any{"placeholder": "Hello world"}},
+							{Key: "press_enter", Component: "switch", Flex: 6, Options: map[string]any{"helper": "After typing"}},
 						},
 					},
 				},
@@ -115,19 +116,13 @@ func init() {
 				{Key: "timeout", Type: "number", Default: 60, Label: "Timeout (sec)"},
 				{Key: "retry_count", Type: "number", Default: 0, Label: "Retry Count"},
 			},
-			GlobalForm: [][]node.Form{
-				{
-					{Key: "timeout", Component: "number", Flex: 12},
-					{Key: "retry_count", Component: "number", Flex: 12},
-				},
-			},
-			Outputs: []node.NodeOutputDef{
+			Outputs: []node.HandleEdge{
 				{Key: "success", Label: "Success", Tone: "success"},
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(config map[string]interface{}, _ []node.Node) node.NodeExecutor {
-			return &BrowserNode{Config: config}
+		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+			return &BrowserNode{Action: action}
 		},
 	})
 }
@@ -138,8 +133,8 @@ func (n *BrowserNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, 
 		return node.NodeExecutionResult{}, err
 	}
 
-	action, ok := n.Config["action"].(string)
-	if !ok {
+	action := n.Action.Key
+	if action == "" {
 		return node.NodeExecutionResult{}, fmt.Errorf("action is required")
 	}
 	logger.DevPrintf("[Browser] Starting Execute: %s\n", action)
@@ -150,7 +145,7 @@ func (n *BrowserNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, 
 	}
 
 	timeoutSec := 60.0
-	if t, ok := n.Config["timeout"].(float64); ok && t > 0 {
+	if t, ok := node.FieldValue(n.Action, "timeout").(float64); ok && t > 0 {
 		timeoutSec = t
 	}
 
@@ -275,13 +270,13 @@ func (n *BrowserNode) runAction(ctx *node.NodeContext, tabCtx context.Context, a
 
 // getSelector is a helper to commonize selector parsing across actions.
 func (n *BrowserNode) getSelector(ctx *node.NodeContext) (string, chromedp.QueryOption, error) {
-	selectorRaw, _ := n.Config["selector"].(string)
+	selectorRaw, _ := node.FieldValue(n.Action, "selector").(string)
 	selector := node.ParseTemplate(selectorRaw, ctx.Variables)
 	if selector == "" {
 		return "", nil, fmt.Errorf("selector is required")
 	}
 
-	selectorType, _ := n.Config["selector_type"].(string)
+	selectorType, _ := node.FieldValue(n.Action, "selector_type").(string)
 	queryOpt := chromedp.ByQuery
 	if selectorType == "xpath" {
 		queryOpt = chromedp.BySearch

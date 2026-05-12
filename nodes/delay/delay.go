@@ -7,7 +7,7 @@ import (
 )
 
 type DelayNode struct {
-	Config map[string]any
+	Action node.NodeAction
 	Output any
 }
 
@@ -15,12 +15,13 @@ func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
 		NodeSpec: node.NodeSpec{
 			NodeMetadata: node.NodeMetadata{
-				Type:  "delay",
-				Label: "Delay",
-				Icon:  "https://www.svgrepo.com/show/86792/sand-clock.svg",
-				Tags:  []string{"System"},
+				Type:        "delay",
+				Label:       "Delay",
+				Icon:        "https://www.svgrepo.com/show/86792/sand-clock.svg",
+				Tags:        []string{"System"},
+				Description: "Adds a pause before continuing the workflow.",
 			},
-			Description:   "Adds a pause before continuing the workflow.",
+
 			DefaultAction: "seconds",
 			Actions: []node.NodeAction{
 				{
@@ -37,20 +38,20 @@ func init() {
 							Options:  map[string]any{"min": 0},
 						},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{{Key: "duration", Component: "number-s1"}},
 					},
 				},
 			},
-			Outputs: []node.NodeOutputDef{{Key: "success", Label: "Success"}}},
+			Outputs: []node.HandleEdge{{Key: "success", Label: "Success"}}},
 
-		ExecutorFactory: func(config map[string]any, childNodes []node.Node) node.NodeExecutor {
-			return &DelayNode{Config: config}
+		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+			return &DelayNode{Action: action}
 		},
 	})
 }
 func (n *DelayNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	seconds, ok := n.Config["duration"].(float64)
+	seconds, ok := node.FieldValue(n.Action, "duration").(float64)
 	if !ok {
 		return node.NodeExecutionResult{}, fmt.Errorf("invalid duration format")
 	}

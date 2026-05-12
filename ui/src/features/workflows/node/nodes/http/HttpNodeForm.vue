@@ -260,49 +260,45 @@ const responseHeadersText = computed(() => {
 })
 
 // Sync: props.node → local state
-watch(() => props.node.data?.config, (newVal) => {
-  if (newVal) {
-    const nc = newVal as Partial<HttpConfig>
+watch(() => props.node.data?.action, (newAction) => {
+  if (newAction) {
+    const fields = newAction.fields || []
+    
+    // Helper to get value from fields array
+    const getVal = (key: string) => {
+      const field = fields.find((f: any) => f.key === key)
+      return field?.value ?? field?.default
+    }
+
     config.value = {
-      method: (nc.method || getFieldDefault('method') || 'GET') as HttpMethod,
-      url: nc.url || '',
-      headers: nc.headers || '',
-      body: nc.body || '',
-      timeout: nc.timeout || getFieldDefault('timeout') || 60,
-      params: nc.params || [],
-      auth: nc.auth || { type: '', bearer: { token: '' }, basic: { username: '', password: '' }, apikey: { key: '', value: '', in: 'header' } }
+      method: (getVal('method') || 'GET') as HttpMethod,
+      url: getVal('url') || '',
+      headers: getVal('headers') || '',
+      body: getVal('body') || '',
+      timeout: getVal('timeout') || 60,
+      params: [], // These might be handled specifically in local state
+      auth: { type: '', bearer: { token: '' }, basic: { username: '', password: '' }, apikey: { key: '', value: '', in: 'header' } }
     }
 
     isInternalUpdate.value = true
-    if (nc.headers) {
-      headersList.value = nc.headers.split('\n').filter(l => l.trim()).map(line => {
+
+    // Restore bodyType from saved body value
+    const body = config.value.body
+    if (body) {
+      try { JSON.parse(body); bodyType.value = 'json' } catch { bodyType.value = 'raw' }
+    } else {
+      bodyType.value = 'json'
+    }
+
+    const headers = config.value.headers
+    if (headers) {
+      headersList.value = headers.split('\n').filter(l => l.trim()).map(line => {
         const idx = line.indexOf(':')
         if (idx === -1) return { key: line.trim(), value: '' }
         return { key: line.slice(0, idx).trim(), value: line.slice(idx + 1).trim() }
       })
     } else {
       headersList.value = []
-    }
-
-    paramsList.value = nc.params?.map(p => ({ key: p.key, value: p.value })) || []
-
-    const a = nc.auth
-    authType.value = a?.type || ''
-    auth.value = {
-      bearer: { token: a?.bearer?.token || '' },
-      basic: { username: a?.basic?.username || '', password: a?.basic?.password || '' },
-      apikey: { key: a?.apikey?.key || '', value: a?.apikey?.value || '', in: a?.apikey?.in || 'header' }
-    }
-
-    if (nc.body) {
-      try {
-        JSON.parse(nc.body)
-        bodyType.value = 'json'
-      } catch {
-        bodyType.value = 'raw'
-      }
-    } else {
-      bodyType.value = 'json'
     }
 
     nextTick(() => { isInternalUpdate.value = false })
@@ -538,16 +534,21 @@ const tokenizeCurl = (curl: string): string[] => {
   return tokens
 }
 
-const getData = (): HttpConfig => {
-  return {
-    method: config.value.method,
-    url: config.value.url,
-    headers: config.value.headers,
-    body: config.value.body,
-    timeout: config.value.timeout,
-    params: config.value.params,
-    auth: config.value.auth
-  }
+const getData = (): any => {
+  // Deep clone the original action to maintain all metadata
+  const action = JSON.parse(JSON.stringify(props.node.data.action))
+  
+  // Update values from local config state
+  action.fields = action.fields.map((f: any) => {
+    if (f.key === 'method') return { ...f, value: config.value.method }
+    if (f.key === 'url') return { ...f, value: config.value.url }
+    if (f.key === 'headers') return { ...f, value: config.value.headers }
+    if (f.key === 'body') return { ...f, value: config.value.body }
+    if (f.key === 'timeout') return { ...f, value: config.value.timeout }
+    return f
+  })
+  
+  return action
 }
 
 defineExpose({ getData })

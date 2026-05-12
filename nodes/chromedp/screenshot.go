@@ -11,7 +11,7 @@ import (
 )
 
 func (n *BrowserNode) screenshot(ctx *node.NodeContext, tabCtx context.Context) (node.NodeExecutionResult, error) {
-	pathRaw, _ := n.Config["path"].(string)
+	pathRaw, _ := node.FieldValue(n.Action, "path").(string)
 	path := node.ParseTemplate(pathRaw, ctx.Variables)
 	if path == "" {
 		return node.NodeExecutionResult{}, fmt.Errorf("path is required")
@@ -21,7 +21,7 @@ func (n *BrowserNode) screenshot(ctx *node.NodeContext, tabCtx context.Context) 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return node.NodeExecutionResult{}, fmt.Errorf("failed to create directory for screenshot: %v", err)
 	}
-	fullPage, _ := n.Config["full_page"].(bool)
+	fullPage, _ := node.FieldValue(n.Action, "full_page").(bool)
 
 	var buf []byte
 	var err error

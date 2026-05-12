@@ -3,40 +3,41 @@
     :label="field?.label" 
     :helper="field?.helper"
   >
-    <ElTimePicker 
+    <ElSlider 
       :model-value="modelValue" 
-      :placeholder="field?.placeholder"
       :disabled="field?.disabled"
-      :format="field?.format"
-      :value-format="field?.value_format"
-      style="width: 100%"
+      :min="field?.min || 0"
+      :max="field?.max || 100"
+      :step="field?.step || 1"
+      :show-input="field?.show_input"
       @update:model-value="$emit('update:modelValue', $event)"
     />
   </EkFormItem>
 </template>
 
 <script setup lang="ts">
-import { ElTimePicker } from 'element-plus'
-import EkFormItem from '../EkFormItem.vue'
+import { ElSlider } from 'element-plus'
+import EkFormItem from './EkFormItem.vue'
 
 interface FieldDef {
   key: string
   label?: string
   helper?: string
-  placeholder?: string
   disabled?: boolean
-  format?: string
-  value_format?: string
+  min?: number
+  max?: number
+  step?: number
+  show_input?: boolean
   [key: string]: any
 }
 
 defineProps<{
-  modelValue?: string | Date
+  modelValue?: number | number[]
   field?: FieldDef
   item?: any
 }>()
 
 defineEmits<{
-  'update:modelValue': [value: string | Date]
+  'update:modelValue': [value: number | number[]]
 }>()
 </script>

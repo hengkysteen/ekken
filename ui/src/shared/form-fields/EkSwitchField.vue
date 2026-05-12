@@ -3,42 +3,40 @@
     :label="field?.label" 
     :helper="field?.helper"
   >
-    <ElDatePicker 
+    <ElSwitch 
+      class="ek-switch-field__input"
       :model-value="modelValue" 
-      :placeholder="field?.placeholder"
       :disabled="field?.disabled"
-      :type="(field?.picker_type as any) || 'date'"
-      :format="field?.format"
-      :value-format="field?.value_format"
-      style="width: 100%"
       @update:model-value="$emit('update:modelValue', $event)"
     />
   </EkFormItem>
 </template>
 
 <script setup lang="ts">
-import { ElDatePicker } from 'element-plus'
-import EkFormItem from '../EkFormItem.vue'
+import { ElSwitch } from 'element-plus'
+import EkFormItem from './EkFormItem.vue'
 
 interface FieldDef {
   key: string
   label?: string
   helper?: string
-  placeholder?: string
   disabled?: boolean
-  picker_type?: string
-  format?: string
-  value_format?: string
   [key: string]: any
 }
 
 defineProps<{
-  modelValue?: string | Date
+  modelValue?: string | number | boolean
   field?: FieldDef
   item?: any
 }>()
 
 defineEmits<{
-  'update:modelValue': [value: string | Date]
+  'update:modelValue': [value: string | number | boolean]
 }>()
 </script>
+
+<style scoped>
+.ek-switch-field__input {
+  align-self: flex-start;
+}
+</style>

@@ -25,7 +25,7 @@ func makeCtxWithStop(iteration int) (*node.NodeContext, chan struct{}) {
 }
 
 func executor(config map[string]any) *TimerNode {
-	return &TimerNode{config: config}
+	return &TimerNode{action: node.ActionFromMap(config)}
 }
 
 // --- Manual ---
@@ -155,7 +155,7 @@ func TestCron_InvalidExpression(t *testing.T) {
 func TestCron_Stop(t *testing.T) {
 	ctx, stop := makeCtxWithStop(0)
 	// every minute — won't fire during test
-	n := executor(map[string]any{"action": "cron", "cron": "* * * * *", "count": float64(0)})
+	n := executor(map[string]any{"action": "cron", "cron": "0 * * * * *", "count": float64(0)})
 
 	done := make(chan error, 1)
 	go func() {
@@ -172,7 +172,7 @@ func TestCron_Stop(t *testing.T) {
 }
 
 func TestCron_CountReached(t *testing.T) {
-	n := executor(map[string]any{"action": "cron", "cron": "* * * * *", "count": float64(1)})
+	n := executor(map[string]any{"action": "cron", "cron": "0 * * * * *", "count": float64(1)})
 	_, err := n.Execute(makeCtx(1))
 	if err != node.ErrWorkflowComplete {
 		t.Fatalf("got %v, want ErrWorkflowComplete", err)

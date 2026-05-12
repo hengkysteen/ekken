@@ -7,7 +7,7 @@ import (
 
 // NodeProvider defines the interface required by the engine to resolve nodes.
 type NodeProvider interface {
-	GetExecutor(nodeType string, config map[string]interface{}, childNodes []Node) NodeExecutor
+	GetExecutor(nodeType string, action NodeAction) NodeExecutor
 	GetSpec(nodeType string) (NodeSpec, bool)
 }
 
@@ -90,7 +90,7 @@ func (r *Registry) AllSpecs() []NodeSpec {
 	return result
 }
 
-func (r *Registry) GetExecutor(nodeType string, config map[string]interface{}, childNodes []Node) NodeExecutor {
+func (r *Registry) GetExecutor(nodeType string, action NodeAction) NodeExecutor {
 	r.executorMu.RLock()
 	factory, ok := r.executorRegistry[nodeType]
 	r.executorMu.RUnlock()
@@ -98,5 +98,5 @@ func (r *Registry) GetExecutor(nodeType string, config map[string]interface{}, c
 	if !ok {
 		return nil
 	}
-	return factory(config, childNodes)
+	return factory(action)
 }

@@ -147,7 +147,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &FSNode{Config: tt.config}
+			n := &FSNode{Action: node.ActionFromMap(tt.config)}
 			ctx := &node.NodeContext{
 				Stop:      make(chan struct{}),
 				Variables: tt.variables,
@@ -179,7 +179,8 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 			}
 
 			if tt.verify != nil {
-				path := node.ParseTemplate(tt.config["path"].(string), tt.variables)
+				n := &FSNode{Action: node.ActionFromMap(tt.config)}
+				path := node.ParseTemplate(node.FieldValue(n.Action, "path").(string), tt.variables)
 				tt.verify(t, path)
 			}
 		})
@@ -323,13 +324,17 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			path := node.ParseTemplate(tt.config["path"].(string), tt.variables)
+			n := &FSNode{Action: node.ActionFromMap(tt.config)}
+			pathVal := node.FieldValue(n.Action, "path")
+			path := ""
+			if pathVal != nil {
+				path = node.ParseTemplate(pathVal.(string), tt.variables)
+			}
 			
 			if tt.setup != nil {
 				tt.setup(t, path)
 			}
 
-			n := &FSNode{Config: tt.config}
 			ctx := &node.NodeContext{
 				Stop:      make(chan struct{}),
 				Variables: tt.variables,
@@ -372,11 +377,11 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 
 func TestFSNode_Stop(t *testing.T) {
 	n := &FSNode{
-		Config: map[string]any{
+		Action: node.ActionFromMap(map[string]any{
 			"action":  "write",
 			"path":    "testdata/stop.txt",
 			"content": "content",
-		},
+		}),
 	}
 
 	stop := make(chan struct{})
@@ -509,16 +514,17 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			path := tt.config["path"].(string)
-			if path != "" {
-				path = node.ParseTemplate(path, tt.variables)
+			n := &FSNode{Action: node.ActionFromMap(tt.config)}
+			pathVal := node.FieldValue(n.Action, "path")
+			path := ""
+			if pathVal != nil && pathVal.(string) != "" {
+				path = node.ParseTemplate(pathVal.(string), tt.variables)
 			}
 
 			if tt.setup != nil {
 				tt.setup(t, path)
 			}
 
-			n := &FSNode{Config: tt.config}
 			ctx := &node.NodeContext{
 				Stop:      make(chan struct{}),
 				Variables: tt.variables,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { inject } from 'vue'
 import { ElInput, ElIcon, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus'
-import { Folder, Key, Document, ArrowDown } from '@element-plus/icons-vue'
+import { Folder, Key, Document } from '@element-plus/icons-vue'
 
 defineProps<{
   modelValue?: string | number

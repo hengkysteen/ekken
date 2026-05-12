@@ -2,7 +2,7 @@ import { type Ref } from 'vue'
 import { type Node, type XYPosition } from '@vue-flow/core'
 import type { Workflow } from '@workflows/workflow/api'
 import type { WorkflowNode } from '@workflows/node/types/node'
-import { generateNodeId, buildDefaultConfig, calculateNodeOutputs, buildNodeData } from '@workflows/node/utils/node'
+import { generateNodeId, buildActionInstance, calculateNodeOutputs, buildNodeData } from '@workflows/node/utils/node'
 import { getVueFlowType } from '@workflows/workflow/utils/vueFlowUtils'
 import { useNodeStore } from '@workflows/node/stores/node'
 
@@ -12,8 +12,7 @@ export interface AddNodeParams {
   tags?: string[]
   icon?: string
   position?: XYPosition
-  config?: Record<string, any>
-  response_var?: string
+  action?: any
   sourceType?: 'catalog' | 'mynodes'
   name?: string
 }
@@ -29,27 +28,14 @@ export function useWorkflowActions(
 ) {
   const nodeStore = useNodeStore()
 
-  function addNode({ type, label, tags, icon, position, config, response_var, sourceType, name }: AddNodeParams) {
+  function addNode({ type, label, tags, icon, position, action, sourceType, name }: AddNodeParams) {
     const id = generateNodeId()
     const def = nodeStore.findDef(type)
-    let finalConfig = config || {}
-
-    if (!config) {
-      finalConfig = buildDefaultConfig(def)
-    }
-
-    let defaultResponseVar = ''
-    if (def) {
-      let actionKey = finalConfig.action || def.default_action
-      if (!actionKey && def.actions && def.actions.length > 0) {
-        actionKey = def.actions[0].key
-      }
-      
-      const actionDef = def.actions?.find((a: any) => a.key === actionKey)
-      if (actionDef?.has_response) {
-        const cleanId = id.replace(/-/g, '_')
-        defaultResponseVar = `${actionKey}_${cleanId}`
-      }
+    
+    // Build default action if not provided
+    let finalAction = action
+    if (!finalAction && def) {
+      finalAction = buildActionInstance(def)
     }
 
     const rawNode: WorkflowNode = {
@@ -59,8 +45,7 @@ export function useWorkflowActions(
       tags: tags || def?.tags || [],
       icon: icon || def?.icon || '',
       version: def?.version,
-      config: finalConfig,
-      response_var: sourceType === 'mynodes' ? defaultResponseVar : (response_var || defaultResponseVar)
+      action: finalAction,
     }
 
     if (workflow.value) {
@@ -74,11 +59,10 @@ export function useWorkflowActions(
       data: buildNodeData({
         id,
         type,
-        config: finalConfig,
+        action: finalAction,
         tags: rawNode.tags,
         label: rawNode.label,
         icon: rawNode.icon,
-        response_var: rawNode.response_var,
         name,
         sourceType
       }, def),
@@ -129,8 +113,7 @@ export function useWorkflowActions(
       tags: nodeDef.tags,
       icon: nodeDef.icon,
       position,
-      config: nodeDef.config,
-      response_var: nodeDef.response_var,
+      action: nodeDef.action,
       sourceType: nodeDef.sourceType,
     })
 
@@ -138,26 +121,21 @@ export function useWorkflowActions(
     return flowNode
   }
 
-  function updateNodeConfig(id: string, { config, response_var, label }: { config: any; response_var: string; label?: string }) {
+  function updateNodeAction(id: string, { action, label }: { action: any; label?: string }) {
     const flowNode = flowNodes.value.find((n) => n.id === id)
     if (flowNode) {
-      flowNode.data.config = { ...config }
-      flowNode.data.response_var = response_var
+      flowNode.data.action = { ...action }
       if (label) flowNode.data.label = label
 
       const def = nodeStore.findDef(flowNode.data.nodeType)
-      if (def?.actions && config?.action) {
-        const actionDef = def.actions.find(a => a.key === config.action)
-        flowNode.data.action_has_output = actionDef?.has_output ?? false
-      }
-
-      flowNode.data.outputs = calculateNodeOutputs(flowNode.data.nodeType, config, def)
+      flowNode.data.action_has_response = action?.has_response ?? false
+      flowNode.data.outputs = calculateNodeOutputs(flowNode.data.nodeType, action, def)
     }
 
     const rawNode = workflow.value?.nodes?.find((n) => n.id === id)
     if (rawNode) {
-      rawNode.config = { ...config }
-      rawNode.response_var = response_var
+      rawNode.action = { ...action }
+      if (label) rawNode.label = label
     }
   }
 
@@ -176,18 +154,11 @@ export function useWorkflowActions(
 
     const newId = generateNodeId()
     const def = nodeStore.findDef(sourceNode.data.nodeType)
-    let newResponseVar = ''
-    if (def) {
-      const config = sourceNode.data.config || {}
-      let actionKey = config.action || def.default_action
-      if (!actionKey && def.actions && def.actions.length > 0) {
-        actionKey = def.actions[0].key
-      }
-      
-      const actionDef = def.actions?.find((a: any) => a.key === actionKey)
-      if (actionDef?.has_response) {
-        newResponseVar = `${actionKey}_${newId.replace(/-/g, '_')}`
-      }
+    
+    // Deep clone the action and generate new response_var
+    const newAction = JSON.parse(JSON.stringify(sourceNode.data.action || {}))
+    if (newAction.has_response) {
+      newAction.response_var = `${newAction.key}_${generateNodeId()}`
     }
 
     const rawNode: WorkflowNode = {
@@ -196,8 +167,7 @@ export function useWorkflowActions(
       label: sourceNode.data.label,
       tags: sourceNode.data.tags || [],
       icon: sourceNode.data.icon || '',
-      config: { ...(sourceNode.data.config || {}) },
-      response_var: newResponseVar,
+      action: newAction,
     }
 
     if (workflow.value) {
@@ -216,7 +186,6 @@ export function useWorkflowActions(
         label: rawNode.label,
         tags: rawNode.tags,
         icon: rawNode.icon,
-        response_var: rawNode.response_var
       }, def),
     }
 
@@ -243,7 +212,8 @@ export function useWorkflowActions(
     addNode,
     addEdge,
     addNodeFromHandle,
-    updateNodeConfig,
+    updateNodeConfig: updateNodeAction, // Alias for compatibility
+    updateNodeAction,
     removeNode,
     duplicateNode,
     clearWorkflow,

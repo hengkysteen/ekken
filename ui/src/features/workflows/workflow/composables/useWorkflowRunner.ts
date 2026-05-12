@@ -46,15 +46,20 @@ export function useWorkflowRunner(workflowIdRef: Ref<string>) {
     })
 
     eventSource.onerror = () => {
-      if (isRunning.value) {
+      const status = workflowStore.getStatus(workflowIdRef.value)
+      const terminalStatuses = ['done', 'error', 'stopped', 'idle']
+      if (terminalStatuses.includes(status)) {
+        disconnectSSE()
+      } else {
         console.warn('SSE Connection lost, attempting to reconnect...')
       }
     }
   }
 
-  // SSOT: Tutup koneksi log saat Global Store menyatakan status bukan "running" lagi
-  watch(isRunning, (val: boolean, oldVal: boolean) => {
-    if (oldVal === true && val === false) {
+  // SSOT: Close log connection only when status is truly terminal (done, error, stopped, idle)
+  watch(() => workflowStore.getStatus(workflowIdRef.value), (status) => {
+    const terminalStatuses = ['done', 'error', 'stopped', 'idle']
+    if (terminalStatuses.includes(status)) {
       disconnectSSE()
       startSync()
     }

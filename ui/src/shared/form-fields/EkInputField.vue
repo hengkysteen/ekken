@@ -19,8 +19,8 @@
 </template>
 
 <script setup lang="ts">
-import EkFormItem from '../EkFormItem.vue'
-import EkInput from '../EkInput.vue'
+import EkFormItem from './EkFormItem.vue'
+import EkInput from './EkInput.vue'
 import type { Credential } from '@credentials/api'
 
 interface FieldDef {

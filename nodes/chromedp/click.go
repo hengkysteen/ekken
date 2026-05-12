@@ -19,7 +19,7 @@ func (n *BrowserNode) click(ctx *node.NodeContext, tabCtx context.Context) (node
 		return node.NodeExecutionResult{}, err
 	}
 
-	selectorType, _ := n.Config["selector_type"].(string)
+	selectorType, _ := node.FieldValue(n.Action, "selector_type").(string)
 	logger.DevPrintf("[Browser] Clicking selector (%s): %s\n", selectorType, selector)
 	// Get URL before clicking
 	var urlBefore string

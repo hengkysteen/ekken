@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"ekken/internal/api"
 	"ekken/internal/features/workflow"
@@ -158,6 +159,7 @@ func (h *WorkflowHandler) WorkflowsStatus(c *gin.Context) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("X-Accel-Buffering", "no")
 
 	subID, ch := h.sse.SubscribeGlobal()
 	defer func() {
@@ -170,6 +172,9 @@ func (h *WorkflowHandler) WorkflowsStatus(c *gin.Context) {
 		c.SSEvent("status_update", string(data))
 	}
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case msg, ok := <-ch:
@@ -179,6 +184,15 @@ func (h *WorkflowHandler) WorkflowsStatus(c *gin.Context) {
 			data, _ := json.Marshal(msg.Data)
 			c.SSEvent(msg.Type, string(data))
 			w.Write([]byte("\n"))
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+			return true
+		case <-ticker.C:
+			c.SSEvent("ping", "{}")
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
 			return true
 		case <-c.Request.Context().Done():
 			return false
@@ -207,6 +221,7 @@ func (h *WorkflowHandler) SSEStream(c *gin.Context) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 	c.Header("Access-Control-Allow-Origin", "*")
+	c.Header("X-Accel-Buffering", "no")
 
 	subID, ch := h.sse.Subscribe(id)
 	defer func() {
@@ -218,6 +233,9 @@ func (h *WorkflowHandler) SSEStream(c *gin.Context) {
 	data, _ := json.Marshal(status)
 	c.SSEvent("status_update", string(data))
 
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case msg, ok := <-ch:
@@ -227,6 +245,15 @@ func (h *WorkflowHandler) SSEStream(c *gin.Context) {
 			data, _ := json.Marshal(msg.Data)
 			c.SSEvent(msg.Type, string(data))
 			w.Write([]byte("\n"))
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
+			return true
+		case <-ticker.C:
+			c.SSEvent("ping", "{}")
+			if flusher, ok := w.(http.Flusher); ok {
+				flusher.Flush()
+			}
 			return true
 		case <-c.Request.Context().Done():
 			return false
@@ -235,20 +262,6 @@ func (h *WorkflowHandler) SSEStream(c *gin.Context) {
 }
 
 func (h *WorkflowHandler) NodeCatalog(c *gin.Context) {
-	parent := c.Query("parent")
 	regs := node.GlobalRegistry.AllSpecs()
-
-	filtered := make([]node.NodeSpec, 0)
-	for _, r := range regs {
-		if parent != "" && r.Parent != parent {
-			continue
-		}
-		if parent == "" && r.Parent != "" {
-			// Skip children if they're not explicitly asked for
-			continue
-		}
-		filtered = append(filtered, r)
-	}
-
-	c.JSON(http.StatusOK, api.Response{OK: true, Data: filtered})
+	c.JSON(http.StatusOK, api.Response{OK: true, Data: regs})
 }

@@ -26,8 +26,7 @@ export const useMyNodeStore = defineStore('mynode', () => {
       label: nodeData.label,
       tags: nodeData.tags,
       icon: nodeData.icon,
-      config: nodeData.config || {},
-      response_var: nodeData.response_var || '',
+      action: nodeData.action,
     }
     const saved = await api.saveMyNodesItem(payload)
     items.value = [saved, ...items.value]

@@ -92,12 +92,12 @@ const hasTrigger = computed(() => {
   return editor.flowNodes.some(node => node.data?.tags?.includes('Trigger'))
 })
 
-function onAddFromSidebar({ type, label, tags, icon, position, config, response_var, sourceType, name }: any) {
+function onAddFromSidebar({ type, label, tags, icon, position, action, sourceType, name }: any) {
   const pos = position || (() => {
     const center = canvasRef.value?.viewportCenter || { x: 100, y: 200 }
     return { x: center.x + Math.random() * 50, y: center.y + Math.random() * 50 }
   })()
-  editor.addNode({ type, label, tags, icon, position: pos, config, response_var, sourceType, name })
+  editor.addNode({ type, label, tags, icon, position: pos, action, sourceType, name })
 }
 
 function onDeleteMyNodesItem(id: string) {
@@ -171,8 +171,7 @@ onBeforeUnmount(() => {
   editor.resetState()
 })
 
-onBeforeRouteLeave(async (to, _from, next) => {
-  if (to.name !== null) await editor.saveWorkflowSilent(originalId.value)
+onBeforeRouteLeave((_to, _from, next) => {
   next()
 })
 

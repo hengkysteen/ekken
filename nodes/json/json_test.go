@@ -200,7 +200,7 @@ func TestJsonNode_Execute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &JsonNode{Config: tt.config}
+			n := &JsonNode{Action: node.ActionFromMap(tt.config)}
 			ctx := &node.NodeContext{
 				Stop:      make(chan struct{}),
 				Variables: map[string]interface{}{"my_input": tt.input},

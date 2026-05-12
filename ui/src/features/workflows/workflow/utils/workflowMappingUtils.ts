@@ -19,8 +19,7 @@ export function buildSavePayload(
     label: n.data.label,
     icon: n.data.icon,
     tags: n.data.tags,
-    config: n.data.config || {},
-    response_var: n.data.response_var || '',
+    action: n.data.action,
   }))
 
   const edges: WorkflowEdge[] = flowEdges.map((e) => ({

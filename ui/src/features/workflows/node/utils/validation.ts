@@ -35,32 +35,26 @@ export interface ValidationResult {
  * }
  * ```
  */
+/**
+ * Validate a node configuration (NodeAction) against its schema definition.
+ * 
+ * @param action - The NodeAction object containing fields and their values
+ * @param schema - The node definition schema
+ * @returns Validation result with any errors found
+ */
 export function validateNodeConfig(
-  config: Record<string, any>,
-  schema: NodeDefinition
+  action: any,
+  _schema: NodeDefinition
 ): ValidationResult {
   const errors: string[] = []
 
-  // Determine which fields to validate
-  const fieldsToValidate: NodeField[] = []
-
-  // Validate global_fields
-  if (schema.global_fields) {
-    fieldsToValidate.push(...schema.global_fields)
-  }
-
-  // Validate action-specific fields
-  const action = config.action || schema.default_action
-  if (action && schema.actions) {
-    const actionDef = schema.actions.find(a => a.key === action)
-    if (actionDef) {
-      fieldsToValidate.push(...actionDef.fields)
-    }
-  }
+  // In the new self-describing architecture, the action object 
+  // already contains all the fields it needs.
+  const fieldsToValidate = action.fields || []
 
   // Validate each field
   for (const field of fieldsToValidate) {
-    const fieldErrors = validateField(config, field)
+    const fieldErrors = validateField(field)
     errors.push(...fieldErrors)
   }
 
@@ -73,17 +67,15 @@ export function validateNodeConfig(
 /**
  * Validate a single field against its schema definition.
  * 
- * @param config - The full configuration object
- * @param field - The field schema to validate against
+ * @param field - The field object (NodeField) containing its value and constraints
  * @returns Array of error messages (empty if valid)
  */
 function validateField(
-  config: Record<string, any>,
   field: NodeField
 ): string[] {
   const errors: string[] = []
-  const value = config[field.key]
-  const hasValue = field.key in config
+  const value = field.value
+  const hasValue = value !== undefined && value !== null && (typeof value === 'string' ? value.trim() !== '' : true)
   
   // Check required fields
   if (field.required && !hasValue) {
@@ -91,7 +83,7 @@ function validateField(
     if (field.default !== undefined) {
       return errors
     }
-    errors.push(`Missing required field: ${field.key}`)
+    errors.push(`Missing required field: ${field.label || field.key}`)
     return errors
   }
   
@@ -103,7 +95,7 @@ function validateField(
   // Validate type
   if (!validateFieldType(value, field.type)) {
     errors.push(
-      `Invalid type for "${field.key}": expected ${field.type}, got ${getValueType(value)}`
+      `Invalid type for "${field.label || field.key}": expected ${field.type}, got ${getValueType(value)}`
     )
   }
   
@@ -115,7 +107,7 @@ function validateField(
     
     if (!validValues.includes(value)) {
       errors.push(
-        `Invalid value for "${field.key}": must be one of [${validValues.join(', ')}], got "${value}"`
+        `Invalid value for "${field.label || field.key}": must be one of [${validValues.join(', ')}], got "${value}"`
       )
     }
   }

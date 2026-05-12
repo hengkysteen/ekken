@@ -3,7 +3,7 @@
         <div style="padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
             <h3 style="margin-top: 0;">Dynamic Form (Auto Layout)</h3>
             <el-divider></el-divider>
-            <EkDynamicForm v-model="dynamicFormData" :auto-layout="autoLayout" :fields="fields" />
+            <EkDynamicForm v-model="dynamicFormData" :layout="autoLayout" :fields="fields" />
             <pre style="margin-top: 20px; padding: 10px; background: #f5f5f5; border-radius: 4px;">{{ dynamicFormData }}</pre>
         </div>
     </AppPage>
@@ -12,7 +12,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import AppPage from '../components/AppPage.vue';
-import EkDynamicForm from '../components/ek/EkDynamicForm.vue';
+import EkDynamicForm from '@workflows/node/components/EkDynamicForm.vue';
 
 // Dynamic form data
 const dynamicFormData = ref({

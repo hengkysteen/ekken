@@ -82,51 +82,29 @@ const iconStyle = computed(() => ({
 
 const currentActionHasOutput = computed(() => {
   if (!props.node) return false
-  const type = props.node.data?.nodeType || props.node.type
-  const config = props.node.data?.config || {}
-  const actionKey = config.action
-
-  if (!actionKey) {
-    // If no action is set in config, check if the node spec has a default action or single action
-    const nodeDef = props.catalog.find(n => n.type === type)
-    if (nodeDef) {
-      const defaultAction = nodeDef.default_action || (nodeDef.actions?.length > 0 ? nodeDef.actions[0].key : null)
-      if (defaultAction) {
-        const actionDef = nodeDef.actions.find(a => a.key === defaultAction)
-        return actionDef?.has_response || false
-      }
-    }
-    return false
-  }
-
-  const nodeDef = props.catalog.find(n => n.type === type)
-  const actionDef = nodeDef?.actions?.find(a => a.key === actionKey)
-
-  return actionDef?.has_response || false
+  const action = props.node.data?.action
+  return action?.has_response || false
 })
 
 watch(() => props.node, (newNode) => {
   if (newNode) {
     const type = newNode.data?.nodeType || newNode.type
     specificComponent.value = getNodeFormComponent(type)
-
-    if (newNode.data?.response_var) {
-      responseVar.value = newNode.data.response_var
-    } else {
-      // Generate default if missing
-      const config = newNode.data?.config || {}
-      let actionKey = config.action
-
-      if (!actionKey) {
-        const nodeDef = props.catalog.find(n => n.type === type)
-        actionKey = nodeDef?.default_action || (nodeDef?.actions?.[0]?.key) || type
-      }
-
-      const cleanId = (newNode.id || '').replace(/-/g, '_')
-      responseVar.value = `${actionKey}_${cleanId}`
-    }
+    responseVar.value = newNode.data?.action?.response_var || ''
   }
 }, { immediate: true })
+
+// Sync responseVar when child component's action changes (e.g., action switch)
+watch(() => {
+  if (nodeCompRef.value?.getData) {
+    return nodeCompRef.value.getData()?.response_var
+  }
+  return undefined
+}, (newResponseVar) => {
+  if (newResponseVar) {
+    responseVar.value = newResponseVar
+  }
+})
 
 function onClose() {
   emit('close')
@@ -134,17 +112,26 @@ function onClose() {
 }
 
 function onSave() {
-  let finalConfig = {}
+  let finalAction = null
   if (nodeCompRef.value?.getData) {
-    finalConfig = nodeCompRef.value.getData()
+    finalAction = nodeCompRef.value.getData()
   }
+
+  if (!finalAction) {
+    ElMessage.error("Failed to collect node configuration")
+    return
+  }
+
+  // Ensure response_var is saved inside the action object
+  finalAction.response_var = responseVar.value
 
   const nodeType = nodeTypeDisplay.value
   if (nodeType !== 'timer') {
     const nodeDef = props.catalog.find(n => n.type === nodeType)
 
     if (nodeDef) {
-      const validation = validateNodeConfig(finalConfig, nodeDef)
+      // Note: We might need to update validateNodeConfig to handle NodeAction structure
+      const validation = validateNodeConfig(finalAction, nodeDef)
       if (!validation.valid) {
         ElMessage.error({
           message: `Invalid configuration:\n${validation.errors.join('\n')}`,
@@ -157,8 +144,7 @@ function onSave() {
 
   emit('save', {
     id: props.node?.id,
-    config: finalConfig,
-    response_var: responseVar.value,
+    action: finalAction,
     label: nodeLabel.value
   })
 

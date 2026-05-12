@@ -11,7 +11,7 @@ import (
 )
 
 func (n *BrowserNode) navigate(ctx *node.NodeContext, tabCtx context.Context) (node.NodeExecutionResult, error) {
-	urlRaw, _ := n.Config["url"].(string)
+	urlRaw, _ := node.FieldValue(n.Action, "url").(string)
 	url := node.ParseTemplate(urlRaw, ctx.Variables)
 	if url == "" {
 		return node.NodeExecutionResult{}, fmt.Errorf("url is required")

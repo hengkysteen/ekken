@@ -29,7 +29,7 @@ type MockRegistry struct {
 	Specs     map[string]node.NodeSpec
 }
 
-func (m *MockRegistry) GetExecutor(nodeType string, config map[string]interface{}, childNodes []node.Node) node.NodeExecutor {
+func (m *MockRegistry) GetExecutor(nodeType string, action node.NodeAction) node.NodeExecutor {
 	return m.Executors[nodeType]
 }
 func (m *MockRegistry) GetSpec(nodeType string) (node.NodeSpec, bool) {
@@ -141,7 +141,12 @@ func TestRunner_Retry(t *testing.T) {
 			{
 				NodeMetadata: node.NodeMetadata{Type: "fail-then-pass"},
 				ID:           "n1",
-				Config:       map[string]interface{}{"retry_count": 2.0, "retry_delay": 0.01},
+				Action: node.NodeAction{
+					Fields: []node.NodeField{
+						{Key: "retry_count", Value: 2.0},
+						{Key: "retry_delay", Value: 0.01},
+					},
+				},
 			},
 		},
 	}
@@ -211,7 +216,9 @@ func TestRunner_SaveAs(t *testing.T) {
 			{
 				NodeMetadata: node.NodeMetadata{Type: "producer"},
 				ID:           "n1",
-				ResponseVar:  "my_var",
+				Action: node.NodeAction{
+					ResponseVar: "my_var",
+				},
 			},
 		},
 	}
@@ -260,41 +267,6 @@ func TestRunner_Cancellation(t *testing.T) {
 	}
 }
 
-func TestRunner_NestedNodes(t *testing.T) {
-	innerExecuted := false
-	reg := &MockRegistry{
-		Executors: map[string]node.NodeExecutor{
-			"inner": &MockExecutor{
-				ExecuteFunc: func(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-					innerExecuted = true
-					return node.NodeExecutionResult{Handle: "success"}, nil
-				},
-			},
-		},
-	}
-	eng := New(&MockObserver{}, reg)
-
-	wf := Workflow{
-		ID: "outer-wf",
-		Nodes: []node.Node{
-			{
-				ID: "parent",
-				Nodes: []node.Node{
-					{NodeMetadata: node.NodeMetadata{Type: "inner"}, ID: "child"},
-				},
-			},
-		},
-	}
-
-	err := eng.Run(context.Background(), wf)
-	if err != nil {
-		t.Fatalf("nested run failed: %v", err)
-	}
-
-	if !innerExecuted {
-		t.Error("inner node was not executed")
-	}
-}
 
 func TestRunner_JSONExtraction(t *testing.T) {
 	reg := &MockRegistry{
@@ -314,7 +286,9 @@ func TestRunner_JSONExtraction(t *testing.T) {
 			{
 				NodeMetadata: node.NodeMetadata{Type: "producer"},
 				ID:           "n1",
-				ResponseVar:  "user_id",
+				Action: node.NodeAction{
+					ResponseVar: "user_id",
+				},
 			},
 		},
 	}
@@ -407,7 +381,7 @@ func TestRunner_Dependencies(t *testing.T) {
 	wfSuccess := Workflow{
 		ID: "dep-success-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "parent"}, ID: "p1", Config: map[string]interface{}{"action": "success"}},
+			{NodeMetadata: node.NodeMetadata{Type: "parent"}, ID: "p1", Action: node.NodeAction{Key: "success"}},
 			{NodeMetadata: node.NodeMetadata{Type: "child"}, ID: "c1"},
 		},
 		Edges: []node.Edge{
@@ -500,47 +474,6 @@ func TestRunner_ErrorEdgeRecovery(t *testing.T) {
 		if node == "SHOULD_NOT_RUN" {
 			t.Error("n3 should have been skipped but was executed")
 		}
-	}
-}
-
-func TestRunner_NestedWorkflowWithEdges(t *testing.T) {
-	executionOrder := []string{}
-	reg := &MockRegistry{
-		Executors: map[string]node.NodeExecutor{
-			"step": &MockExecutor{
-				ExecuteFunc: func(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-					executionOrder = append(executionOrder, "step")
-					return node.NodeExecutionResult{Handle: "success"}, nil
-				},
-			},
-		},
-	}
-	eng := New(&MockObserver{}, reg)
-
-	wf := Workflow{
-		ID: "nested-graph-wf",
-		Nodes: []node.Node{
-			{
-				ID: "wrapper",
-				Nodes: []node.Node{
-					{NodeMetadata: node.NodeMetadata{Type: "step"}, ID: "child1"},
-					{NodeMetadata: node.NodeMetadata{Type: "step"}, ID: "child2"},
-				},
-				Edges: []node.Edge{
-					{Source: "child1", SourceHandle: "success", Target: "child2"},
-				},
-			},
-		},
-		Edges: []node.Edge{},
-	}
-
-	err := eng.Run(context.Background(), wf)
-	if err != nil {
-		t.Fatalf("nested graph run failed: %v", err)
-	}
-
-	if len(executionOrder) != 2 {
-		t.Errorf("expected 2 child nodes to execute, got %d", len(executionOrder))
 	}
 }
 

@@ -11,3 +11,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Auto-generated declaration files
+components.d.ts
+auto-imports.d.ts
+
+# Vite cache
+.vite

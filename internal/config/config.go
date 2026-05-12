@@ -37,10 +37,9 @@ func LoadConfig() Config {
 		Port:       getEnvInt("EKKENAPI_PORT", 11245),
 		DataDir:    dataDir,
 		AppVersion: buildVersion,
-		PluginDir:  getEnv("EKKENPLUGIN_DIR", filepath.Join(dataDir, "plugins")),
+		Mode:       mode,
 		RepoURL:    "https://github.com/hengkysteen/ekken",
 		Author:     "hengkysteen",
-		Mode:       mode,
 	}
 }
 

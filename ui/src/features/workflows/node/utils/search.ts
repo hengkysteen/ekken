@@ -30,6 +30,6 @@ export function matchesMyNodeSearch(item: any, query: string): boolean {
     (item.name && item.name.toLowerCase().includes(q)) ||
     item.type.toLowerCase().includes(q) ||
     (item.tags && item.tags.some((t: string) => t.toLowerCase().includes(q))) ||
-    (item.config?.action && item.config.action.toLowerCase().includes(q))
+    (item.action?.key && item.action.key.toLowerCase().includes(q))
   )
 }

@@ -3,6 +3,10 @@ import { loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
+
 export default defineConfig(({ mode }) => {
   // Load all env variables including those without VITE_ prefix
   const env = loadEnv(mode, process.cwd(), '')
@@ -10,7 +14,16 @@ export default defineConfig(({ mode }) => {
   const port = env.EKKENAPI_PORT || '11245'
 
   return {
-    plugins: [vue()],
+    plugins: [
+      vue(),
+      AutoImport({
+        resolvers: [ElementPlusResolver()],
+      }),
+      Components({
+        dirs: ['src/shared/components', 'src/shared/form-fields'],
+        resolvers: [ElementPlusResolver()],
+      }),
+    ],
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
@@ -32,7 +45,14 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       outDir: 'dist',
+      chunkSizeWarningLimit: 1000,
       rollupOptions: {
+        output: {
+          manualChunks: {
+            'vue-flow': ['@vue-flow/core', '@vue-flow/background', '@vue-flow/controls', '@vue-flow/minimap'],
+            'vendor': ['vue', 'vue-router', 'pinia', '@vueuse/core'],
+          },
+        },
         onwarn(warning, warn) {
           // Suppress "PURE" annotation warnings from libraries like @vueuse
           if (warning.code === 'INVALID_ANNOTATION') return

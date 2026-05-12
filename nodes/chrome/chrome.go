@@ -12,7 +12,7 @@ import (
 )
 
 type GoogleChromeNode struct {
-	Config map[string]any
+	Action node.NodeAction
 	Output any
 }
 
@@ -47,12 +47,13 @@ func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
 		NodeSpec: node.NodeSpec{
 			NodeMetadata: node.NodeMetadata{
-				Type:  "google_chrome",
-				Tags:  []string{"Browser"},
-				Label: "Google Chrome",
-				Icon:  "https://www.svgrepo.com/show/496944/chrome.svg",
+				Type:        "google_chrome",
+				Tags:        []string{"Browser"},
+				Label:       "Google Chrome",
+				Icon:        "https://www.svgrepo.com/show/496944/chrome.svg",
+				Description: "Launch or Terminate the global Google Chrome instance.",
 			},
-			Description:   "Launch or Terminate the global Google Chrome instance.",
+
 			DefaultAction: "launch",
 			Actions: []node.NodeAction{
 				{
@@ -67,9 +68,9 @@ func init() {
 						{Key: "height", Type: "number", Default: 1080, Label: "Window Height"},
 						{Key: "headless", Type: "boolean", Default: false, Label: "Headless"},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
-							{Key: "bin_path", Component: "input", Flex: 24, FormOptions: map[string]any{"native_file_picker": true}},
+							{Key: "bin_path", Component: "input", Flex: 24, Options: map[string]any{"native_file_picker": true}},
 						},
 						{
 							{Key: "profile", Component: "input", Flex: 12},
@@ -80,7 +81,7 @@ func init() {
 							{Key: "height", Component: "number", Flex: 12},
 						},
 						{
-							{Key: "headless", Component: "switch", FormOptions: map[string]any{"helper": "Run Chrome without a GUI window"}},
+							{Key: "headless", Component: "switch", Options: map[string]any{"helper": "Run Chrome without a GUI window"}},
 						},
 					},
 				},
@@ -91,33 +92,32 @@ func init() {
 					Fields: []node.NodeField{
 						{Key: "port", Type: "number", Default: 9222, Label: "Port"},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
-							{Key: "port", Component: "number", FormOptions: map[string]any{"helper": "Chrome debugging port to terminate"}},
+							{Key: "port", Component: "number", Options: map[string]any{"helper": "Chrome debugging port to terminate"}},
 						},
 					},
 				},
 			},
-			Outputs: []node.NodeOutputDef{
+			Outputs: []node.HandleEdge{
 				{Key: "success", Label: "Success", Tone: "success"},
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(config map[string]interface{}, _ []node.Node) node.NodeExecutor {
-			return &GoogleChromeNode{Config: config}
+		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+			return &GoogleChromeNode{Action: action}
 		},
 	})
 }
 
 func (n *GoogleChromeNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	action, _ := n.Config["action"].(string)
-	action = strings.ToLower(action)
-	portF, _ := n.Config["port"].(float64)
+	action := strings.ToLower(n.Action.Key)
+	portF, _ := node.FieldValue(n.Action, "port").(float64)
 	port := int(portF)
 	if port == 0 {
 		port = 9222
 	}
-	profile, _ := n.Config["profile"].(string)
+	profile, _ := node.FieldValue(n.Action, "profile").(string)
 	if profile == "" {
 		profile = "mybot"
 	}

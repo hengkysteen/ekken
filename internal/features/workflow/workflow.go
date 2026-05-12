@@ -208,9 +208,6 @@ func (e *Runner) executeGraph(wf Workflow, ctx *node.RunnerContext, iteration in
 
 func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.RunnerContext, iteration int) (string, interface{}, error) {
 	nodeType := nodeDef.Type
-	if nodeType == "" && len(nodeDef.Nodes) > 0 {
-		nodeType = "wrapper"
-	}
 
 	spec, hasSpec := e.registry.GetSpec(nodeType)
 
@@ -229,13 +226,13 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 		}
 	}
 
-	e.updateStatus(wfID, iteration, "running")
+	// Keep status as 'running' (already set at start of Run)
 
 	label := nodeDef.Label
 	if label == "" {
 		label = nodeType
 	}
-	action, _ := nodeDef.Config["action"].(string)
+	action := nodeDef.Action.Key
 	display := label
 	if action != "" {
 		display = fmt.Sprintf("%s (%s)", label, action)
@@ -243,22 +240,17 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 
 	e.logInfo(wfID, "[Node] Executing: %s", display)
 
-	if len(nodeDef.Nodes) > 0 {
-		e.logInfo(wfID, "[Nested] Entering sub-workflow in node '%s' (Label: %s)", nodeDef.ID, nodeDef.Label)
-		return e.executeNestedNodes(wfID, nodeDef, ctx, iteration)
-	}
-
-	executor := e.registry.GetExecutor(nodeDef.Type, nodeDef.Config, nodeDef.Nodes)
+	executor := e.registry.GetExecutor(nodeDef.Type, nodeDef.Action)
 	if executor == nil {
 		return "", nil, fmt.Errorf("unknown node type: %s", nodeDef.Type)
 	}
 
 	retryCount := 0
-	if rc, ok := nodeDef.Config["retry_count"].(float64); ok {
+	if rc, ok := node.FieldValue(nodeDef.Action, "retry_count").(float64); ok {
 		retryCount = int(rc)
 	}
 	retryDelay := 2.0
-	if rd, ok := nodeDef.Config["retry_delay"].(float64); ok && rd > 0 {
+	if rd, ok := node.FieldValue(nodeDef.Action, "retry_delay").(float64); ok && rd > 0 {
 		retryDelay = rd
 	}
 
@@ -281,16 +273,12 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 				handle = "success"
 			}
 
-			actionKey, _ := nodeDef.Config["action"].(string)
-			if actionKey == "" {
-				actionKey = e.getActionKeyFromSpec(nodeDef.Type)
-			}
-			node.GlobalTracker.RecordExecuted(wfID, nodeDef.Type, actionKey)
-			e.updateStatus(wfID, iteration, "success")
+			node.GlobalTracker.RecordExecuted(wfID, nodeDef.Type, nodeDef.Action.Key)
+			// Status remains 'running' globally
 
-			hasResponse := e.checkActionHasResponse(nodeDef.Type, actionKey)
+			hasResponse := e.checkActionHasResponse(nodeDef.Type, nodeDef.Action.Key)
 			if hasResponse && result.Response != nil && result.Type == nil {
-				return "", nil, fmt.Errorf("node '%s' action '%s': kontrak memiliki response, dan node memberikan response, tetapi response type (Mime/Charset) tidak diatur", nodeDef.Type, actionKey)
+				return "", nil, fmt.Errorf("node '%s' action '%s': kontrak memiliki response, dan node memberikan response, tetapi response type (Mime/Charset) tidak diatur", nodeDef.Type, nodeDef.Action.Key)
 			}
 
 			e.logInfo(wfID, "[Node] Output handle: %s", handle)
@@ -310,28 +298,6 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 	return "", nil, nil
 }
 
-func (e *Runner) executeNestedNodes(wfID string, parentNode *node.Node, ctx *node.RunnerContext, iteration int) (string, interface{}, error) {
-	childWorkflow := Workflow{
-		ID:        wfID,
-		Name:      parentNode.Type,
-		Nodes:     parentNode.Nodes,
-		Edges:     parentNode.Edges,
-		Positions: parentNode.Positions,
-	}
-
-	err := e.executeGraph(childWorkflow, ctx, iteration)
-	if err != nil {
-		return "error", nil, err
-	}
-
-	resultHandle := ctx.OutputHandle
-	if resultHandle == "" {
-		resultHandle = "success"
-	}
-
-	e.logInfo(wfID, "[Nested] Wrapper node '%s' finished with handle: %s", parentNode.ID, resultHandle)
-	return resultHandle, nil, nil
-}
 
 func getOnErrorAction(nodeDef *node.Node) string {
 	if nodeDef.OnError != "" {
@@ -344,14 +310,14 @@ func getOnErrorAction(nodeDef *node.Node) string {
 }
 
 func (e *Runner) saveNodeOutput(wfID string, nodeDef *node.Node, ctx *node.NodeContext, response interface{}) {
-	if nodeDef.ResponseVar == "" || response == nil {
+	if nodeDef.Action.ResponseVar == "" || response == nil {
 		return
 	}
 
 	val := response
 
 	// Normalize variable name: strip {{ }} if user typed {{varName}}, consistent with UI convention
-	varName := strings.TrimSpace(nodeDef.ResponseVar)
+	varName := strings.TrimSpace(nodeDef.Action.ResponseVar)
 	varName = strings.TrimPrefix(varName, "{{")
 	varName = strings.TrimSuffix(varName, "}}")
 	varName = strings.TrimSpace(varName)
@@ -363,7 +329,7 @@ func (e *Runner) saveNodeOutput(wfID string, nodeDef *node.Node, ctx *node.NodeC
 	if label == "" {
 		label = nodeDef.Type
 	}
-	action, _ := nodeDef.Config["action"].(string)
+	action := nodeDef.Action.Key
 	display := label
 	if action != "" {
 		display = fmt.Sprintf("%s (%s)", label, action)
@@ -416,7 +382,7 @@ func (e *Runner) getNodeLabel(wf Workflow, id string) string {
 			if label == "" {
 				label = n.Type
 			}
-			action, _ := n.Config["action"].(string)
+			action := n.Action.Key
 			if action != "" {
 				return fmt.Sprintf("%s (%s)", label, action)
 			}

@@ -24,6 +24,9 @@ export interface NodeField {
   /** Data type of this field */
   type: NodeFieldType
 
+  /** Current value of this field (for node instances) */
+  value?: any
+
   /** Whether this field is required */
   required?: boolean
 
@@ -40,7 +43,7 @@ export interface NodeField {
 /**
  * Layout item for dynamic form rendering.
  */
-export interface Form {
+export interface AutoLayout {
   /** Reference to field key or unique UI element key */
   key: string
 
@@ -51,7 +54,7 @@ export interface Form {
   component?: string
 
   /** Specific options for the UI component */
-  form_options?: any
+  options?: any
 }
 
 /**
@@ -61,6 +64,9 @@ export interface Form {
 export interface NodeAction {
   /** Unique action key (e.g., "login", "send") */
   key: string
+
+  /** Variable name to save this action's output to */
+  response_var?: string
 
   /** Human-readable label for this action */
   label: string
@@ -72,13 +78,13 @@ export interface NodeAction {
   fields: NodeField[]
 
   /** Layout definition for dynamic form rendering */
-  form?: Form[][]
+  auto_layout?: AutoLayout[][]
 
   /** Whether this action produces a response that can be used in the workflow */
   has_response: boolean
 
   /** Compatibility properties for older components */
-  auto_layout?: any
+  auto_layout_legacy?: any
   has_output?: boolean
 }
 
@@ -86,7 +92,11 @@ export interface NodeAction {
  * Output handle definition for a node.
  * Defines a connection point that can be used to route workflow execution.
  */
-export interface NodeOutput {
+/**
+ * Output handle definition for a node.
+ * Defines a connection point that can be used to route workflow execution.
+ */
+export interface HandleEdge {
   /** Unique identifier for this output handle */
   key: string
 
@@ -126,17 +136,9 @@ export interface NodeMetadata {
  * This is the metadata that describes a node type and how to configure it.
  */
 export interface NodeDefinition extends NodeMetadata {
-  /** Parent node type (for nested nodes) */
-  parent?: string
-
   /** Detailed description of what this node does */
   description: string
 
-  /** Configuration fields for the parent node (when this is a nested node) */
-  parent_config?: NodeField[]
-
-  /** Whether this node can contain nested child nodes */
-  supports_nested_nodes: boolean
 
   /** Per-action field groups */
   actions: NodeAction[]
@@ -144,14 +146,11 @@ export interface NodeDefinition extends NodeMetadata {
   /** Shared fields across all actions */
   global_fields?: NodeField[]
 
-  /** Layout definition for global fields */
-  global_form?: Form[][]
-
   /** Default action when using Actions pattern */
   default_action?: string
 
   /** Output handles for routing workflow execution */
-  outputs: NodeOutput[]
+  outputs: HandleEdge[]
 }
 
 /**
@@ -161,11 +160,8 @@ export interface WorkflowNode extends NodeMetadata {
   /** Unique instance ID */
   id: string
 
-  /** Configuration values for this node instance */
-  config: Record<string, any>
-
-  /** Variable name to save this node's output to */
-  response_var?: string
+  /** Active action with its fields and values */
+  action: NodeAction
 
   /** Source type of the node (catalog or mynodes) */
   sourceType?: 'catalog' | 'mynodes'
@@ -176,14 +172,6 @@ export interface WorkflowNode extends NodeMetadata {
   /** Position in the visual editor */
   position?: { x: number; y: number }
 
-  /** Child nodes (for nested workflows) */
-  nodes?: WorkflowNode[]
-
-  /** Edges between child nodes (for nested workflows) */
-  edges?: Array<{ source: string; sourceHandle: string; target: string }>
-
-  /** Positions of child nodes (for nested workflows) */
-  positions?: Record<string, { x: number; y: number }>
 }
 
 
@@ -206,11 +194,8 @@ export interface NodeFormProps {
       /** Node type (may differ from type for legacy reasons) */
       nodeType: string
 
-      /** Current configuration values */
-      config: Record<string, any>
-
-      /** Variable name to save output to */
-      response_var?: string
+      /** Active action with its fields and values */
+      action: NodeAction
     }
   }
 }

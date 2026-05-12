@@ -9,19 +9,20 @@ import (
 )
 
 type FSNode struct {
-	Config map[string]any
+	Action node.NodeAction
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
 		NodeSpec: node.NodeSpec{
 			NodeMetadata: node.NodeMetadata{
-				Type:  "fs",
-				Label: "File System",
-				Icon:  "https://www.svgrepo.com/show/506485/file-o.svg",
-				Tags:  []string{"System"},
+				Type:        "fs",
+				Label:       "File System",
+				Tags:        []string{"System"},
+				Icon:        "https://www.svgrepo.com/show/506485/file-o.svg",
+				Description: "File System operations.",
 			},
-			Description:   "File System operations.",
+
 			DefaultAction: "write",
 			Actions: []node.NodeAction{
 				{
@@ -42,13 +43,13 @@ func init() {
 							Label: "Content to write",
 						},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
 							{
 								Key:       "path",
 								Component: "input",
 								Flex:      24,
-								FormOptions: map[string]any{
+								Options: map[string]any{
 									"native_file_picker":           true,
 									"native_file_picker_directory": true,
 								},
@@ -75,13 +76,13 @@ func init() {
 							Label: "Content to append",
 						},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
 							{
 								Key:       "path",
 								Component: "input",
 								Flex:      24,
-								FormOptions: map[string]any{
+								Options: map[string]any{
 									"native_file_picker":           true,
 									"native_file_picker_directory": true,
 								},
@@ -103,13 +104,13 @@ func init() {
 							Label:    "Target file/folder",
 						},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
 							{
 								Key:       "path",
 								Component: "input",
 								Flex:      24,
-								FormOptions: map[string]any{
+								Options: map[string]any{
 									"native_file_picker":           true,
 									"native_file_picker_multiple":  true,
 									"native_file_picker_directory": true,
@@ -119,13 +120,13 @@ func init() {
 					},
 				},
 			},
-			Outputs: []node.NodeOutputDef{
+			Outputs: []node.HandleEdge{
 				{Key: "success", Label: "Success", Tone: "success"},
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(config map[string]any, _ []node.Node) node.NodeExecutor {
-			return &FSNode{Config: config}
+		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+			return &FSNode{Action: action}
 		},
 	})
 }
@@ -137,9 +138,7 @@ func (n *FSNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error
 	default:
 	}
 
-	action, _ := n.Config["action"].(string)
-
-	switch action {
+	switch n.Action.Key {
 	case "append":
 		return n.executeAppend(ctx)
 	case "delete":
@@ -150,8 +149,8 @@ func (n *FSNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error
 }
 
 func (n *FSNode) executeWrite(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	pathRaw, _ := n.Config["path"].(string)
-	contentRaw, _ := n.Config["content"].(string)
+	pathRaw, _ := node.FieldValue(n.Action, "path").(string)
+	contentRaw, _ := node.FieldValue(n.Action, "content").(string)
 
 	if pathRaw == "" {
 		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("file path is required")
@@ -178,8 +177,8 @@ func (n *FSNode) executeWrite(ctx *node.NodeContext) (node.NodeExecutionResult, 
 }
 
 func (n *FSNode) executeAppend(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	pathRaw, _ := n.Config["path"].(string)
-	contentRaw, _ := n.Config["content"].(string)
+	pathRaw, _ := node.FieldValue(n.Action, "path").(string)
+	contentRaw, _ := node.FieldValue(n.Action, "content").(string)
 
 	if pathRaw == "" {
 		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("file path is required")
@@ -212,14 +211,13 @@ func (n *FSNode) executeAppend(ctx *node.NodeContext) (node.NodeExecutionResult,
 }
 
 func (n *FSNode) executeDelete(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	pathRaw, _ := n.Config["path"].(string)
+	pathRaw, _ := node.FieldValue(n.Action, "path").(string)
 
 	if pathRaw == "" {
 		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("file path is required")
 	}
 
 	pathFull := node.ParseTemplate(pathRaw, ctx.Variables)
-	// Handle multiple paths (separated by newline or comma from UI)
 	var paths []string
 	if strings.Contains(pathFull, "\n") {
 		paths = strings.Split(pathFull, "\n")
@@ -236,7 +234,6 @@ func (n *FSNode) executeDelete(ctx *node.NodeContext) (node.NodeExecutionResult,
 			continue
 		}
 
-		// Detect info before it's gone
 		detail, exists := getPathDetail(path)
 
 		if err := os.RemoveAll(path); err != nil {
@@ -250,16 +247,17 @@ func (n *FSNode) executeDelete(ctx *node.NodeContext) (node.NodeExecutionResult,
 	}
 
 	var responseMsg string
-	if deletedCount == 0 {
+	switch deletedCount {
+	case 0:
 		if len(paths) == 1 {
 			detail, _ := getPathDetail(strings.TrimSpace(paths[0]))
 			responseMsg = fmt.Sprintf("%s not found", detail)
 		} else {
 			responseMsg = "No items were found to delete"
 		}
-	} else if deletedCount == 1 {
+	case 1:
 		responseMsg = fmt.Sprintf("Deleted %s", details[0])
-	} else {
+	default:
 		responseMsg = fmt.Sprintf("Successfully deleted %d items", deletedCount)
 	}
 
@@ -274,7 +272,6 @@ func getPathDetail(path string) (string, bool) {
 	info, err := os.Stat(path)
 	name := filepath.Base(path)
 	if err != nil {
-		// If it doesn't exist or error, try to guess from extension
 		if filepath.Ext(name) != "" {
 			return fmt.Sprintf("File '%s'", name), false
 		}

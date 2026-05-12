@@ -18,7 +18,7 @@ func (n *BrowserNode) input(ctx *node.NodeContext, tabCtx context.Context) (node
 	if err != nil {
 		return node.NodeExecutionResult{}, err
 	}
-	valueRaw, _ := n.Config["value"].(string)
+	valueRaw, _ := node.FieldValue(n.Action, "value").(string)
 	value := node.ParseTemplate(valueRaw, ctx.Variables)
 	logger.DevPrintf("[Browser] Mengetik ke %s (panjang: %d)\n", selector, len(value))
 
@@ -91,7 +91,7 @@ func (n *BrowserNode) humanType(tabCtx context.Context, selector string, queryOp
 	}
 
 	// 5. Tekan Enter jika dikonfigurasi
-	if pressEnter, ok := n.Config["press_enter"].(bool); ok && pressEnter {
+	if pressEnter, ok := node.FieldValue(n.Action, "press_enter").(bool); ok && pressEnter {
 		time.Sleep(200 * time.Millisecond)
 		if err := chromedp.Run(tabCtx, chromedp.SendKeys(selector, kb.Enter, queryOpt)); err != nil {
 			logger.DevPrintf("[Browser] Failed to press Enter: %v\n", err)

@@ -14,38 +14,37 @@ export function generateNodeId(): string {
 
 
 
-export function buildDefaultConfig(def?: NodeDefinition): Record<string, any> {
-  const finalConfig: Record<string, any> = {}
+/**
+ * Builds a NodeAction instance based on a node definition and selected action key.
+ * Populates default values and generates response_var if needed.
+ * Does NOT merge global fields - that happens at save time.
+ */
+export function buildActionInstance(def?: NodeDefinition, actionKey?: string): any {
+  if (!def) return { key: '', fields: [] }
 
-  if (!def) return finalConfig
+  const selectedActionKey = actionKey || def.default_action || (def.actions?.[0]?.key) || ''
+  const actionDef = def.actions?.find(a => a.key === selectedActionKey)
 
-  const selectedAction = def.default_action || (def.actions?.[0]?.key) || ''
-  finalConfig.action = selectedAction
+  if (!actionDef) return { key: selectedActionKey, fields: [] }
 
-  if (def.global_fields) {
-    def.global_fields.forEach(field => {
-      if (field.default !== undefined) {
-        finalConfig[field.key] = field.default
-      }
-    })
+  // Clone actionDef to avoid mutating registry
+  const action = { ...actionDef, fields: [...(actionDef.fields || [])] }
+
+  // Populate default values for action fields
+  action.fields = action.fields.map(f => ({
+    ...f,
+    value: f.default !== undefined ? f.default : undefined
+  }))
+
+  // Always generate a unique response_var for nodes that produce output
+  if (action.has_response) {
+    action.response_var = `${action.key}_${generateNodeId()}`
   }
 
-  if (def.actions) {
-    const actionDef = def.actions.find(a => a.key === selectedAction)
-    if (actionDef) {
-      actionDef.fields.forEach(field => {
-        if (field.default !== undefined) {
-          finalConfig[field.key] = field.default
-        }
-      })
-    }
-  }
-
-
-  return finalConfig
+  return action
 }
 
-export function calculateNodeOutputs(_type: string, _config: any, def?: NodeDefinition): any[] {
+export function calculateNodeOutputs(_type: string, _action: any, def?: NodeDefinition): any[] {
   return def?.outputs || []
 }
 
@@ -53,32 +52,22 @@ export function buildNodeData(
   node: Partial<WorkflowNode> & { _label?: string; _tags?: string[]; _icon?: string },
   def?: NodeDefinition
 ) {
-  const outputs = calculateNodeOutputs(node.type!, node.config, def)
-  const finalConfig = { ...(node.config || {}) }
-
-  if (!finalConfig.action && def) {
-    if (def.default_action) {
-      finalConfig.action = def.default_action
-    } else if (def.actions && def.actions.length > 0) {
-      finalConfig.action = def.actions[0].key
-    }
+  // Ensure we have an action object
+  let action = node.action
+  if (!action && def) {
+    action = buildActionInstance(def)
   }
 
-  let actionHasResponse = false
-  if (def?.actions && finalConfig.action) {
-    const actionDef = def.actions.find(a => a.key === finalConfig.action)
-    actionHasResponse = actionDef?.has_response ?? false
-  }
+  const outputs = calculateNodeOutputs(node.type!, action, def)
 
   return {
     label: node._label || def?.label || node.type,
     nodeType: node.type,
     tags: node.tags || def?.tags || [],
     icon: node._icon || def?.icon || '',
-    config: finalConfig,
-    response_var: node.response_var || '',
+    action: action,
     outputs: outputs,
-    action_has_response: actionHasResponse,
+    action_has_response: action?.has_response ?? false,
     id: node.id,
     name: node.name,
     sourceType: node.sourceType,

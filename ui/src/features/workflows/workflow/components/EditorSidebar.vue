@@ -67,7 +67,7 @@
                   </template>
                   <template #subtitle>
                     <el-space :size="4">
-                      <el-text size="small" type="primary" bold>{{ item.config?.action }}</el-text>
+                      <el-text size="small" type="primary" bold>{{ item.action?.key }}</el-text>
                     </el-space>
                   </template>
                   <template #trailing>
@@ -177,13 +177,9 @@ function onMyNodesDragStart(event: DragEvent, item: any) {
     label: item.label,
     tags: item.tags,
     icon: item.icon,
-    config: item.config,
-    response_var: item.response_var,
+    action: item.action,
     sourceType: 'mynodes',
-    name: item.name,
-    nodes: item.nodes,
-    edges: item.edges,
-    positions: item.positions
+    name: item.name
   }
   event.dataTransfer?.setData('application/vueflow', JSON.stringify(dragData))
   if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'

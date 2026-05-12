@@ -10,19 +10,20 @@ import (
 )
 
 type JsonNode struct {
-	Config map[string]any
+	Action node.NodeAction
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
 		NodeSpec: node.NodeSpec{
 			NodeMetadata: node.NodeMetadata{
-				Type:  "json",
-				Label: "JSON",
-				Icon:  "https://www.svgrepo.com/show/458247/json.svg",
-				Tags:  []string{"System"},
+				Type:        "json",
+				Label:       "JSON",
+				Icon:        "https://www.svgrepo.com/show/458247/json.svg",
+				Tags:        []string{"System"},
+				Description: "Extract a value from JSON using a dot-notation path.",
 			},
-			Description:   "Extract a value from JSON using a dot-notation path.",
+
 			DefaultAction: "extract",
 			Actions: []node.NodeAction{
 				{
@@ -44,19 +45,19 @@ func init() {
 							Label:    "JSON path",
 						},
 					},
-					Form: [][]node.Form{
-						{{Key: "input", Component: "textarea", Flex: 24, FormOptions: map[string]any{"helper": "JSON data or variable to extract from"}}},
-						{{Key: "path", Component: "input", Flex: 24, FormOptions: map[string]any{"helper": "Dot-notation path to extract"}}},
+					AutoLayout: [][]node.AutoLayout{
+						{{Key: "input", Component: "textarea", Flex: 24, Options: map[string]any{"helper": "JSON data or variable to extract from"}}},
+						{{Key: "path", Component: "input", Flex: 24, Options: map[string]any{"helper": "Dot-notation path to extract"}}},
 					},
 				},
 			},
-			Outputs: []node.NodeOutputDef{
+			Outputs: []node.HandleEdge{
 				{Key: "success", Label: "Success"},
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(config map[string]any, childNodes []node.Node) node.NodeExecutor {
-			return &JsonNode{Config: config}
+		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+			return &JsonNode{Action: action}
 		},
 	})
 }
@@ -68,12 +69,12 @@ func (n *JsonNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, err
 	default:
 	}
 
-	path, _ := n.Config["path"].(string)
+	path, _ := node.FieldValue(n.Action, "path").(string)
 	if path == "" {
 		return node.NodeExecutionResult{}, fmt.Errorf("path is required")
 	}
 
-	inputRaw, _ := n.Config["input"].(string)
+	inputRaw, _ := node.FieldValue(n.Action, "input").(string)
 	if inputRaw == "" {
 		return node.NodeExecutionResult{}, fmt.Errorf("input is required")
 	}

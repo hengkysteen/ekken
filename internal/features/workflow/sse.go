@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+
+	"ekken/internal/logger"
 )
 
 type SSEServicer interface {
@@ -62,7 +64,7 @@ func (s *WorkflowEventStream) Subscribe(id string) (string, <-chan SSEMessage) {
 	defer ws.mu.Unlock()
 
 	subID := fmt.Sprintf("sub-%s-%d", id, globalSubCounter.Add(1))
-	ch := make(chan SSEMessage, 64)
+	ch := make(chan SSEMessage, 2048)
 	ws.subs[subID] = ch
 
 	return subID, ch
@@ -95,7 +97,7 @@ func (s *WorkflowEventStream) Send(id string, msg SSEMessage) {
 		select {
 		case ch <- msg:
 		default:
-			// Buffer full, skip or handle as needed
+			logger.Error("Workflow SSE buffer full, message dropped", "id", id, "sub", subID, "type", msg.Type)
 		}
 		_ = subID
 	}
@@ -149,7 +151,7 @@ func (s *GlobalEventStream) Subscribe() (string, <-chan SSEMessage) {
 	defer s.mu.Unlock()
 
 	subID := fmt.Sprintf("global-%d", globalSubCounter.Add(1))
-	ch := make(chan SSEMessage, 128)
+	ch := make(chan SSEMessage, 4096)
 	s.subs[subID] = ch
 
 	return subID, ch
@@ -170,6 +172,7 @@ func (s *GlobalEventStream) Send(msg SSEMessage) {
 		select {
 		case ch <- msg:
 		default:
+			logger.Error("Global SSE buffer full, message dropped", "type", msg.Type)
 		}
 	}
 }

@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import EkFormItem from '../EkFormItem.vue'
+import EkFormItem from './EkFormItem.vue'
 import SimpleJsonEditor from '@shared/components/SimpleJsonEditor.vue'
 
 interface FieldDef {

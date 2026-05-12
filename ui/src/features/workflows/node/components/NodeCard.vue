@@ -24,7 +24,7 @@
       </div>
       <div class="node-body">
         <div class="action-section">
-          <span class="action-name">{{ data.config?.action || data.nodeType }}</span>
+          <span class="action-name">{{ data.action?.key || data.nodeType }}</span>
         </div>
       </div>
     </div>

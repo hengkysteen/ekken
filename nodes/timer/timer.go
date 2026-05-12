@@ -10,7 +10,7 @@ import (
 )
 
 type TimerNode struct {
-	config map[string]any
+	action node.NodeAction
 }
 
 var (
@@ -23,12 +23,12 @@ func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
 		NodeSpec: node.NodeSpec{
 			NodeMetadata: node.NodeMetadata{
-				Type:  "timer",
-				Tags:  []string{"Trigger"},
-				Label: "Timer",
-				Icon:  "https://www.svgrepo.com/show/522683/timer.svg",
+				Type:        "timer",
+				Tags:        []string{"Trigger"},
+				Label:       "Timer",
+				Icon:        "https://www.svgrepo.com/show/522683/timer.svg",
+				Description: "Workflow entry point (manual, interval, or cron)",
 			},
-			Description:   "Workflow entry point (manual, interval, or cron)",
 			DefaultAction: "manual",
 			Actions: []node.NodeAction{
 				{
@@ -37,13 +37,13 @@ func init() {
 					Description: "Trigger workflow manually (runs once)",
 					HasResponse: false,
 					Fields:      []node.NodeField{},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
 							{
 								Key:       "info_1",
 								Component: "text",
 								Flex:      24,
-								FormOptions: map[string]any{
+								Options: map[string]any{
 									"text": "This workflow will only run when manually triggered via the Run button.",
 								},
 							},
@@ -59,20 +59,20 @@ func init() {
 						{Key: "interval", Type: "number", Label: "Interval", Default: 10, Required: true},
 						{Key: "count", Type: "number", Label: "Iterations", Default: 1, Required: true},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
 							{
-								Key:         "interval",
-								Component:   "number",
-								Flex:        12,
-								FormOptions: map[string]any{"min": 1, "helper": "Interval in seconds"},
+								Key:       "interval",
+								Component: "number",
+								Flex:      12,
+								Options:   map[string]any{"min": 1, "helper": "Interval in seconds"},
 							},
 
 							{
-								Key:         "count",
-								Component:   "number",
-								Flex:        12,
-								FormOptions: map[string]any{"min": 0, "helper": "How many times to repeat (0 = run forever)"},
+								Key:       "count",
+								Component: "number",
+								Flex:      12,
+								Options:   map[string]any{"min": 0, "helper": "How many times to repeat (0 = run forever)"},
 							},
 						},
 					},
@@ -86,56 +86,55 @@ func init() {
 						{Key: "cron", Type: "string", Required: true, Label: "Cron expression"},
 						{Key: "count", Type: "number", Label: "Iterations", Default: 0, Required: true},
 					},
-					Form: [][]node.Form{
+					AutoLayout: [][]node.AutoLayout{
 						{
 							{
-								Key:         "cron",
-								Component:   "input",
-								Flex:        14,
-								FormOptions: map[string]any{"helper": "Format: second minute hour day month weekday", "placeholder": "*/30 * * * * *"},
+								Key:       "cron",
+								Component: "input",
+								Flex:      14,
+								Options:   map[string]any{"helper": "Format: second minute hour day month weekday", "placeholder": "*/30 * * * * *"},
 							},
 
 							{
-								Key:         "count",
-								Component:   "number",
-								Flex:        10,
-								FormOptions: map[string]any{"min": 0, "helper": "Total scheduled runs (0 = run forever)"},
+								Key:       "count",
+								Component: "number",
+								Flex:      10,
+								Options:   map[string]any{"min": 0, "helper": "Total scheduled runs (0 = run forever)"},
 							}},
 					},
 				},
 			},
 
-			Outputs: []node.NodeOutputDef{{Key: "success", Label: "Success", Tone: "success"}},
+			Outputs: []node.HandleEdge{{Key: "success", Label: "Success", Tone: "success"}},
 		},
-		ExecutorFactory: func(config map[string]interface{}, childNodes []node.Node) node.NodeExecutor {
-			return &TimerNode{config: config}
+		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+			return &TimerNode{action: action}
 		},
 	})
 }
 
 func (n *TimerNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
 	// Validasi dasar
-	if count := n.config["count"]; count != nil {
+	if count := node.FieldValue(n.action, "count"); count != nil {
 		if f, ok := count.(float64); ok && f < 0 {
 			return node.NodeExecutionResult{}, fmt.Errorf("count cannot be negative")
 		}
 	}
-	if interval := n.config["interval"]; interval != nil {
+	if interval := node.FieldValue(n.action, "interval"); interval != nil {
 		if f, ok := interval.(float64); ok && f < 0 {
 			return node.NodeExecutionResult{}, fmt.Errorf("interval cannot be negative")
 		}
 	}
 
 	count := 1
-	if c, ok := n.config["count"].(float64); ok {
+	if c, ok := node.FieldValue(n.action, "count").(float64); ok {
 		count = int(c)
 	}
 	if count > 0 && ctx.Iteration >= count {
 		return node.NodeExecutionResult{}, node.ErrWorkflowComplete
 	}
 
-	action, _ := n.config["action"].(string)
-	switch action {
+	switch n.action.Key {
 	case "interval":
 		return n.executeInterval(ctx, count)
 	case "cron":
@@ -154,7 +153,7 @@ func (n *TimerNode) executeManual(ctx *node.NodeContext) (node.NodeExecutionResu
 
 func (n *TimerNode) executeInterval(ctx *node.NodeContext, count int) (node.NodeExecutionResult, error) {
 	interval := 10
-	if v, ok := n.config["interval"].(float64); ok {
+	if v, ok := node.FieldValue(n.action, "interval").(float64); ok {
 		interval = int(v)
 	}
 
@@ -164,7 +163,7 @@ func (n *TimerNode) executeInterval(ctx *node.NodeContext, count int) (node.Node
 }
 
 func (n *TimerNode) executeCron(ctx *node.NodeContext, count int) (node.NodeExecutionResult, error) {
-	cronExpr, _ := n.config["cron"].(string)
+	cronExpr, _ := node.FieldValue(n.action, "cron").(string)
 	if cronExpr == "" {
 		return node.NodeExecutionResult{}, fmt.Errorf("cron expression is required")
 	}

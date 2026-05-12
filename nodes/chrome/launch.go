@@ -18,10 +18,10 @@ import (
 )
 
 func (n *GoogleChromeNode) launch(ctx *node.NodeContext, port int, resolvedProfile string) (node.NodeExecutionResult, error) {
-	headless, _ := n.Config["headless"].(bool)
-	binPath, _ := n.Config["bin_path"].(string)
-	widthF, _ := n.Config["width"].(float64)
-	heightF, _ := n.Config["height"].(float64)
+	headless, _ := node.FieldValue(n.Action, "headless").(bool)
+	binPath, _ := node.FieldValue(n.Action, "bin_path").(string)
+	widthF, _ := node.FieldValue(n.Action, "width").(float64)
+	heightF, _ := node.FieldValue(n.Action, "height").(float64)
 	SetConfig(binPath, port, resolvedProfile, headless, int(widthF), int(heightF))
 	if err := EnsureBrowser(ctx.Context, true); err != nil {
 		return node.NodeExecutionResult{}, fmt.Errorf("failed to launch chrome: %v", err)

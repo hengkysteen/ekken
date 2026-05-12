@@ -30,10 +30,10 @@ func TestConcurrentMetadataAccess(t *testing.T) {
 
 			// Setiap goroutine mencoba akses Metadata
 			browserNode := &BrowserNode{
-				Config: map[string]interface{}{
+				Action: node.ActionFromMap(map[string]interface{}{
 					"action": "navigate",
 					"url":    "https://example.com",
-				},
+				}),
 			}
 
 			// Ini akan trigger getOrCreateTab yang akses ctx.Metadata
