@@ -4,6 +4,7 @@
  */
 
 import type { NodeDefinition, NodeField, NodeFieldType } from '@workflows/node/types/node'
+import { getActionBlueprint, getActionValue } from './node'
 
 /**
  * Result of a validation operation
@@ -44,17 +45,27 @@ export interface ValidationResult {
  */
 export function validateNodeConfig(
   action: any,
-  _schema: NodeDefinition
+  schema: NodeDefinition
 ): ValidationResult {
   const errors: string[] = []
+  const actionBlueprint = getActionBlueprint(schema, action?.key)
 
-  // In the new self-describing architecture, the action object 
-  // already contains all the fields it needs.
-  const fieldsToValidate = action.fields || []
+  if (!actionBlueprint) {
+    errors.push(`Invalid action: ${action?.key || '(empty)'}`)
+    return { valid: false, errors }
+  }
 
-  // Validate each field
-  for (const field of fieldsToValidate) {
-    const fieldErrors = validateField(field)
+  const schemaFields = [...(schema.global_fields || []), ...(actionBlueprint.fields || [])]
+  const schemaKeys = new Set(schemaFields.map(field => field.key))
+
+  for (const field of action?.fields || []) {
+    if (field?.key && !schemaKeys.has(field.key)) {
+      errors.push(`Unknown field: ${field.key}`)
+    }
+  }
+
+  for (const field of schemaFields) {
+    const fieldErrors = validateField(field, getActionValue(action, field.key, field.default))
     errors.push(...fieldErrors)
   }
 
@@ -71,10 +82,10 @@ export function validateNodeConfig(
  * @returns Array of error messages (empty if valid)
  */
 function validateField(
-  field: NodeField
+  field: NodeField,
+  value: any
 ): string[] {
   const errors: string[] = []
-  const value = field.value
   const hasValue = value !== undefined && value !== null && (typeof value === 'string' ? value.trim() !== '' : true)
   
   // Check required fields

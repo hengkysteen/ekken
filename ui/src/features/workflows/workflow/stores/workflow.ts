@@ -21,7 +21,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     if (sse.connected.value) return
     sse.connect((id, status, name) => {
       statuses.value[id] = status
-      console.log(`[Ekken] Global SSE Update: ${id} -> ${status} (${name})`)
 
       // Notify on terminal states (done, error, stopped)
       if (status === 'done' || status === 'error' || status === 'stopped') {

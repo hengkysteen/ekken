@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { mynodeApi as api } from '@workflows/mynode/api'
 import type { MyNodesItem } from '@workflows/mynode/types'
+import { serializeActionForSave } from '@workflows/node/utils/node'
 
 export const useMyNodeStore = defineStore('mynode', () => {
   const items = ref<MyNodesItem[]>([])
@@ -26,7 +27,7 @@ export const useMyNodeStore = defineStore('mynode', () => {
       label: nodeData.label,
       tags: nodeData.tags,
       icon: nodeData.icon,
-      action: nodeData.action,
+      action: serializeActionForSave(nodeData.action),
     }
     const saved = await api.saveMyNodesItem(payload)
     items.value = [saved, ...items.value]

@@ -82,16 +82,8 @@ export interface NodeAction {
 
   /** Whether this action produces a response that can be used in the workflow */
   has_response: boolean
-
-  /** Compatibility properties for older components */
-  auto_layout_legacy?: any
-  has_output?: boolean
 }
 
-/**
- * Output handle definition for a node.
- * Defines a connection point that can be used to route workflow execution.
- */
 /**
  * Output handle definition for a node.
  * Defines a connection point that can be used to route workflow execution.

@@ -67,7 +67,6 @@ export const Storage = {
     const oldKey = 'ekken-workflow-settings'
     const oldData = this.get<any>(oldKey)
     if (oldData && typeof oldData === 'object') {
-      console.log('[Storage] Migrating old settings...', oldData)
       if (oldData.edgeStyle) this.set(StorageKeys.EDGE_STYLE, oldData.edgeStyle)
       if (oldData.edgeAnimated !== undefined) this.set(StorageKeys.EDGE_ANIMATED, oldData.edgeAnimated)
       

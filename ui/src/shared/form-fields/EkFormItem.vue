@@ -48,7 +48,6 @@ const executePick = async (options: { multiple?: boolean, directory?: boolean, t
       }
     }
   } catch (e: any) {
-    console.log('File picker error:', e)
     if (e.error === 'cancelled' || (e.message && e.message.toLowerCase().includes('cancel'))) {
       return
     }

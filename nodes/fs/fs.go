@@ -30,6 +30,7 @@ func init() {
 					Label:       "Write",
 					Description: "Write content to a file.",
 					HasResponse: true,
+					ResponseType: &node.NodeResponseType{Mime: "text/plain", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{
 							Key:      "path",
@@ -63,6 +64,7 @@ func init() {
 					Label:       "Append",
 					Description: "Append content to the end of a file.",
 					HasResponse: true,
+					ResponseType: &node.NodeResponseType{Mime: "text/plain", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{
 							Key:      "path",
@@ -96,6 +98,7 @@ func init() {
 					Label:       "Delete",
 					Description: "Delete a file or directory.",
 					HasResponse: true,
+					ResponseType: &node.NodeResponseType{Mime: "text/plain", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{
 							Key:      "path",

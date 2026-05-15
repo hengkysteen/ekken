@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"sort"
 	"sync"
 )
@@ -30,6 +31,13 @@ var GlobalRegistry = NewRegistry()
 
 func (r *Registry) Register(reg NodeRegistration) {
 	spec := reg.NodeSpec
+
+	// Auto-fill ResponseVar for actions that have HasResponse
+	for i, action := range spec.Actions {
+		if action.HasResponse && action.ResponseVar == "" {
+			spec.Actions[i].ResponseVar = fmt.Sprintf("%s.%s_", spec.Type, action.Key)
+		}
+	}
 
 	r.specMu.Lock()
 	r.specRegistry[spec.Type] = spec

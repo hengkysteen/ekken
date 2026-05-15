@@ -8,7 +8,7 @@ import (
 type NodeMetadata struct {
 	Type        string           `json:"type"`
 	Label       string           `json:"label,omitempty"`
-	Description string           `json:"description"`
+	Description string           `json:"description,omitempty"`
 	Icon        string           `json:"icon,omitempty"`
 	Tags        []string         `json:"tags,omitempty"`
 	DependsOn   []NodeDependency `json:"depends_on,omitempty"`
@@ -22,11 +22,11 @@ type NodeSpec struct {
 }
 type NodeField struct {
 	Key      string `json:"key"`
-	Type     string `json:"type"`
-	Required bool   `json:"required"`
+	Type     string `json:"type,omitempty"`
+	Required bool   `json:"required,omitempty"`
 	Default  any    `json:"default,omitempty"`
 	Options  any    `json:"options,omitempty"`
-	Label    string `json:"label"`
+	Label    string `json:"label,omitempty"`
 	Value    any    `json:"value,omitempty"`
 }
 type AutoLayout struct {
@@ -44,9 +44,9 @@ type AutoLayout struct {
 }
 type NodeAction struct {
 	Key          string            `json:"key"`
-	Label        string            `json:"label"`
-	Description  string            `json:"description"`
-	HasResponse  bool              `json:"has_response"`
+	Label        string            `json:"label,omitempty"`
+	Description  string            `json:"description,omitempty"`
+	HasResponse  bool              `json:"has_response,omitempty"`
 	ResponseType *NodeResponseType `json:"response_type,omitempty"`
 	ResponseVar  string            `json:"response_var,omitempty"`
 	Fields       []NodeField       `json:"fields"`

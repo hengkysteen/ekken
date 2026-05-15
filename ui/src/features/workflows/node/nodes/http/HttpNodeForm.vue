@@ -144,6 +144,7 @@
 import { ref, watch, computed, nextTick } from 'vue'
 import { Promotion, Monitor, RefreshRight } from '@element-plus/icons-vue'
 import { useNodeStore } from '@workflows/node/stores/node'
+import { getActionBlueprint, getActionValue, serializeActionForSave } from '@workflows/node/utils/node'
 import type { NodeFormProps } from '@workflows/node/types/node'
 import KeyValueEditor from '@shared/components/KeyValueEditor.vue'
 import SimpleJsonEditor from '@shared/components/SimpleJsonEditor.vue'
@@ -262,20 +263,12 @@ const responseHeadersText = computed(() => {
 // Sync: props.node → local state
 watch(() => props.node.data?.action, (newAction) => {
   if (newAction) {
-    const fields = newAction.fields || []
-    
-    // Helper to get value from fields array
-    const getVal = (key: string) => {
-      const field = fields.find((f: any) => f.key === key)
-      return field?.value ?? field?.default
-    }
-
     config.value = {
-      method: (getVal('method') || 'GET') as HttpMethod,
-      url: getVal('url') || '',
-      headers: getVal('headers') || '',
-      body: getVal('body') || '',
-      timeout: getVal('timeout') || 60,
+      method: (getActionValue(newAction, 'method', getFieldDefault('method') || 'GET')) as HttpMethod,
+      url: getActionValue(newAction, 'url', getFieldDefault('url') || '') || '',
+      headers: getActionValue(newAction, 'headers', getFieldDefault('headers') || '') || '',
+      body: getActionValue(newAction, 'body', getFieldDefault('body') || '') || '',
+      timeout: getActionValue(newAction, 'timeout', getFieldDefault('timeout') || 60) || 60,
       params: [], // These might be handled specifically in local state
       auth: { type: '', bearer: { token: '' }, basic: { username: '', password: '' }, apikey: { key: '', value: '', in: 'header' } }
     }
@@ -535,20 +528,29 @@ const tokenizeCurl = (curl: string): string[] => {
 }
 
 const getData = (): any => {
-  // Deep clone the original action to maintain all metadata
-  const action = JSON.parse(JSON.stringify(props.node.data.action))
-  
-  // Update values from local config state
+  const originalAction = props.node.data.action || {}
+  const actionBlueprint = getActionBlueprint(nodeDef.value, originalAction.key)
+  if (!actionBlueprint) return serializeActionForSave(originalAction)
+
+  const action = {
+    key: actionBlueprint.key,
+    response_var: originalAction.response_var,
+    fields: actionBlueprint.fields.map((field: any) => ({
+      key: field.key,
+      value: getActionValue(originalAction, field.key, field.default)
+    }))
+  }
+
   action.fields = action.fields.map((f: any) => {
-    if (f.key === 'method') return { ...f, value: config.value.method }
-    if (f.key === 'url') return { ...f, value: config.value.url }
-    if (f.key === 'headers') return { ...f, value: config.value.headers }
-    if (f.key === 'body') return { ...f, value: config.value.body }
-    if (f.key === 'timeout') return { ...f, value: config.value.timeout }
+    if (f.key === 'method') return { key: f.key, value: config.value.method }
+    if (f.key === 'url') return { key: f.key, value: config.value.url }
+    if (f.key === 'headers') return { key: f.key, value: config.value.headers }
+    if (f.key === 'body') return { key: f.key, value: config.value.body }
+    if (f.key === 'timeout') return { key: f.key, value: config.value.timeout }
     return f
   })
-  
-  return action
+
+  return serializeActionForSave(action)
 }
 
 defineExpose({ getData })

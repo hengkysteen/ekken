@@ -5,6 +5,7 @@ import { StorageKeys } from '@shared/utils/storage'
 import { buildNodeData } from '@workflows/node/utils/node'
 import { DEFAULT_EDGE_STYLE, DEFAULT_EDGE_ANIMATED } from '@workflows/workflow/utils/workflowSettings'
 import { getVueFlowType } from '@workflows/workflow/utils/vueFlowUtils'
+import { useNodeStore } from '@workflows/node/stores/node'
 
 // Composables
 import { useWorkflowDraft, type Viewport } from '../composables/useWorkflowDraft'
@@ -60,21 +61,32 @@ export const useWorkflowEditorStore = defineStore('workflowEditor', () => {
 
   // --- Store Local Actions (Mappings) ---
   function importWorkflow(imported: Workflow) {
-    flowNodes.value = imported.nodes.map((n, i) => {
+    const nodeStore = useNodeStore()
+    const positions = imported.positions || {}
+    workflow.value = {
+      ...imported,
+      nodes: imported.nodes || [],
+      edges: imported.edges || [],
+      positions,
+    }
+
+    flowNodes.value = (imported.nodes || []).map((n, i) => {
+      const def = nodeStore.findDef(n.type)
       return {
         id: n.id,
         type: getVueFlowType(n.type),
-        position: n.position || { x: 100 + i * 250, y: 200 },
-        data: buildNodeData(n),
+        position: positions[n.id] || { x: 100 + i * 250, y: 200 },
+        data: buildNodeData(n, def),
       }
     })
 
     flowEdges.value = (imported.edges || []).map((e) => ({
-      id: `e-${e.source}-${e.target}-${e.sourceHandle}`,
+      id: `e-${e.source}-${e.target}-${e.sourceHandle || 'success'}`,
       source: e.source,
-      sourceHandle: e.sourceHandle,
+      sourceHandle: e.sourceHandle || 'success',
       target: e.target,
-      type: 'default',
+      type: edgeStyle.value,
+      animated: edgeAnimated.value,
       style: { strokeWidth: 2 },
       markerEnd: { type: 'arrowclosed' } as any,
     }))

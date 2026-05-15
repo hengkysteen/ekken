@@ -1,7 +1,7 @@
 import { type XYPosition } from '@vue-flow/core'
 import type { Workflow, WorkflowEdge } from '@workflows/workflow/api'
 import type { WorkflowNode } from '@workflows/node/types/node'
-import { buildNodeData } from '@workflows/node/utils/node'
+import { buildNodeData, serializeActionForSave } from '@workflows/node/utils/node'
 import { getVueFlowType } from '@workflows/workflow/utils/vueFlowUtils'
 import { useNodeStore } from '@workflows/node/stores/node'
 
@@ -17,9 +17,7 @@ export function buildSavePayload(
     id: n.id,
     type: n.data.nodeType || n.type,
     label: n.data.label,
-    icon: n.data.icon,
-    tags: n.data.tags,
-    action: n.data.action,
+    action: serializeActionForSave(n.data.action),
   }))
 
   const edges: WorkflowEdge[] = flowEdges.map((e) => ({
@@ -41,6 +39,24 @@ export function buildSavePayload(
     nodes,
     edges,
     positions,
+  }
+}
+
+export function sanitizeWorkflowPayload(workflow: Workflow): Workflow {
+  return {
+    ...workflow,
+    nodes: (workflow.nodes || []).map((n: any) => ({
+      id: n.id,
+      type: n.type,
+      label: n.label,
+      action: serializeActionForSave(n.action),
+    })),
+    edges: (workflow.edges || []).map((e: any) => ({
+      source: e.source,
+      sourceHandle: e.sourceHandle || 'success',
+      target: e.target,
+    })),
+    positions: workflow.positions,
   }
 }
 

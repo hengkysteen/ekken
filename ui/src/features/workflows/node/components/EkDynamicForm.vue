@@ -138,12 +138,7 @@ function getFieldFromAll(key: string): any {
   const field = allFields.value.find((f) => f.key === key)
   if (!field) return { key, type: 'string', label: key, value: '' }
 
-  // Ensure value is initialized
-  if (field.value === undefined) {
-    field.value = ''
-  }
-
-  return field
+  return field.value === undefined ? { ...field, value: '' } : field
 }
 
 function normalizeItem(item: AutoLayout): any {

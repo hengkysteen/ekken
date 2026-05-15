@@ -31,6 +31,7 @@ func init() {
 					Label:       "Extract",
 					Description: "Extract a value by path",
 					HasResponse: true,
+					ResponseType: &node.NodeResponseType{Mime: "application/json", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{
 							Key:      "input",

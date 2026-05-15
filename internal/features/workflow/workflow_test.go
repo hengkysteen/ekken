@@ -3,6 +3,7 @@ package workflow
 import (
 	"context"
 	"ekken/internal/features/workflow/node"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -266,7 +267,6 @@ func TestRunner_Cancellation(t *testing.T) {
 		t.Errorf("expected context.Canceled error, got: %v", err)
 	}
 }
-
 
 func TestRunner_JSONExtraction(t *testing.T) {
 	reg := &MockRegistry{
@@ -767,6 +767,54 @@ func TestWorkflowService_Create(t *testing.T) {
 	res := service.ValidateForRun(wf)
 	if res.Valid {
 		t.Error("expected ValidateForRun to be invalid for empty nodes workflow")
+	}
+}
+
+func TestWorkflowService_GetSanitizesRawPayload(t *testing.T) {
+	mock := &MockWorkflowStore{
+		GetFunc: func(id string) (Workflow, []byte, error) {
+			return Workflow{
+				ID:   id,
+				Name: "Workflow",
+				Nodes: []node.Node{
+					{
+						NodeMetadata: node.NodeMetadata{
+							Type:        "http",
+							Label:       "HTTP",
+							Description: "catalog description",
+							Icon:        "icon.svg",
+							Tags:        []string{"Action"},
+						},
+						Action: node.NodeAction{
+							Key:         "request",
+							Label:       "Request",
+							Description: "action description",
+							HasResponse: true,
+							Fields: []node.NodeField{
+								{Key: "url", Type: "string", Label: "URL", Value: "https://example.com"},
+							},
+						},
+					},
+				},
+			}, []byte(`{"stale":"raw"}`), nil
+		},
+	}
+
+	service := NewWorkflowService(mock)
+	wf, raw, err := service.Get("wf-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if wf.Nodes[0].Icon != "" || wf.Nodes[0].Description != "" || len(wf.Nodes[0].Tags) != 0 {
+		t.Fatalf("expected sanitized workflow node metadata, got %+v", wf.Nodes[0].NodeMetadata)
+	}
+
+	var decoded Workflow
+	if err := json.Unmarshal(raw, &decoded); err != nil {
+		t.Fatalf("raw payload should be valid sanitized workflow json: %v", err)
+	}
+	if decoded.Nodes[0].Icon != "" || decoded.Nodes[0].Action.Label != "" || decoded.Nodes[0].Action.Fields[0].Label != "" {
+		t.Fatalf("expected sanitized raw payload, got %+v", decoded.Nodes[0])
 	}
 }
 

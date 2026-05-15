@@ -2,7 +2,7 @@ import { type Ref } from 'vue'
 import { type Node, type XYPosition } from '@vue-flow/core'
 import type { Workflow } from '@workflows/workflow/api'
 import type { WorkflowNode } from '@workflows/node/types/node'
-import { generateNodeId, buildActionInstance, calculateNodeOutputs, buildNodeData } from '@workflows/node/utils/node'
+import { generateNodeId, buildActionInstance, calculateNodeOutputs, buildNodeData, serializeActionForSave } from '@workflows/node/utils/node'
 import { getVueFlowType } from '@workflows/workflow/utils/vueFlowUtils'
 import { useNodeStore } from '@workflows/node/stores/node'
 
@@ -33,7 +33,7 @@ export function useWorkflowActions(
     const def = nodeStore.findDef(type)
     
     // Build default action if not provided
-    let finalAction = action
+    let finalAction = action ? serializeActionForSave(action) : action
     if (!finalAction && def) {
       finalAction = buildActionInstance(def)
     }
@@ -67,11 +67,6 @@ export function useWorkflowActions(
         sourceType
       }, def),
     }
-
-    if (label) flowNode.data.label = label
-    if (tags) flowNode.data.tags = tags
-    if (icon) flowNode.data.icon = icon
-    if (sourceType) flowNode.data.sourceType = sourceType
 
     flowNodes.value = [...flowNodes.value, flowNode]
     return flowNode
@@ -122,19 +117,20 @@ export function useWorkflowActions(
   }
 
   function updateNodeAction(id: string, { action, label }: { action: any; label?: string }) {
+    const savedAction = serializeActionForSave(action)
     const flowNode = flowNodes.value.find((n) => n.id === id)
     if (flowNode) {
-      flowNode.data.action = { ...action }
+      flowNode.data.action = savedAction
       if (label) flowNode.data.label = label
 
       const def = nodeStore.findDef(flowNode.data.nodeType)
-      flowNode.data.action_has_response = action?.has_response ?? false
-      flowNode.data.outputs = calculateNodeOutputs(flowNode.data.nodeType, action, def)
+      flowNode.data.action_has_response = def?.actions?.find(a => a.key === flowNode.data.action?.key)?.has_response ?? false
+      flowNode.data.outputs = calculateNodeOutputs(flowNode.data.nodeType, flowNode.data.action, def)
     }
 
     const rawNode = workflow.value?.nodes?.find((n) => n.id === id)
     if (rawNode) {
-      rawNode.action = { ...action }
+      rawNode.action = savedAction
       if (label) rawNode.label = label
     }
   }
@@ -156,9 +152,10 @@ export function useWorkflowActions(
     const def = nodeStore.findDef(sourceNode.data.nodeType)
     
     // Deep clone the action and generate new response_var
-    const newAction = JSON.parse(JSON.stringify(sourceNode.data.action || {}))
-    if (newAction.has_response) {
-      newAction.response_var = `${newAction.key}_${generateNodeId()}`
+    const newAction = serializeActionForSave(JSON.parse(JSON.stringify(sourceNode.data.action || {})))
+    const actionHasResponse = def?.actions?.find(a => a.key === newAction.key)?.has_response ?? false
+    if (actionHasResponse) {
+      newAction.response_var = `${sourceNode.data.nodeType}.${newAction.key}_${generateNodeId()}`
     }
 
     const rawNode: WorkflowNode = {

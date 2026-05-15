@@ -36,6 +36,7 @@ func init() {
 					Label:       "HTTP Request",
 					Description: "Send an HTTP request to an endpoint",
 					HasResponse: true,
+					ResponseType: &node.NodeResponseType{Mime: "application/json", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{Key: "url", Type: "string", Required: true, Label: "Endpoint URL"},
 						{

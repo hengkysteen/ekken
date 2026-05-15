@@ -8,6 +8,7 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { workflowApi as api } from '@workflows/workflow/api'
 import { useWorkflowStore } from '@workflows/workflow/stores/workflow'
+import { sanitizeWorkflowPayload } from '@workflows/workflow/utils/workflowMappingUtils'
 
 const emit = defineEmits<{
   success: []
@@ -28,7 +29,12 @@ async function handleFileSelect(event: Event) {
   try {
     loading.value = true
     const text = await file.text()
-    const workflow = JSON.parse(text)
+    const workflow: any = sanitizeWorkflowPayload(JSON.parse(text))
+    delete workflow.id
+    delete workflow.created_at
+    delete workflow.updated_at
+    delete workflow.last_run_at
+    workflow.status = 'idle'
     
     await api.createWorkflow(workflow)
     await store.fetchWorkflows()

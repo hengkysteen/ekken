@@ -49,6 +49,7 @@ import { ElMessage } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
 import { getNodeFormComponent } from '../registry'
 import { validateNodeConfig } from '@workflows/node/utils/validation'
+import { getActionBlueprint } from '@workflows/node/utils/node'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -83,7 +84,8 @@ const iconStyle = computed(() => ({
 const currentActionHasOutput = computed(() => {
   if (!props.node) return false
   const action = props.node.data?.action
-  return action?.has_response || false
+  const nodeDef = props.catalog.find(n => n.type === nodeTypeDisplay.value)
+  return getActionBlueprint(nodeDef, action?.key)?.has_response || false
 })
 
 watch(() => props.node, (newNode) => {
@@ -130,7 +132,6 @@ function onSave() {
     const nodeDef = props.catalog.find(n => n.type === nodeType)
 
     if (nodeDef) {
-      // Note: We might need to update validateNodeConfig to handle NodeAction structure
       const validation = validateNodeConfig(finalAction, nodeDef)
       if (!validation.valid) {
         ElMessage.error({

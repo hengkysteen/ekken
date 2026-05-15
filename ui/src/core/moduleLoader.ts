@@ -17,7 +17,6 @@ export const loadModules = async (ctx: ModuleContext) => {
   for (const path in moduleFiles) {
     const mod = (moduleFiles[path] as any).default as EkkenModule
     if (mod) {
-      console.log(`[ModuleLoader] Found module: ${mod.id} (${mod.name})`)
       modules.push(mod)
     }
   }

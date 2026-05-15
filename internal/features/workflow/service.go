@@ -51,10 +51,20 @@ func (s *WorkflowService) List() ([]WorkflowFile, error) {
 }
 
 func (s *WorkflowService) Get(id string) (Workflow, []byte, error) {
-	return s.store.Get(id)
+	wf, raw, err := s.store.Get(id)
+	if err != nil {
+		return wf, raw, err
+	}
+	wf = sanitizeWorkflowForStorage(wf)
+	raw, err = json.MarshalIndent(wf, "", "  ")
+	if err != nil {
+		return wf, nil, err
+	}
+	return wf, raw, nil
 }
 
 func (s *WorkflowService) Create(wf Workflow) (Workflow, string, error) {
+	wf = sanitizeWorkflowForStorage(wf)
 	// Generate 10-char random ID for better UX and aesthetics
 	if wf.ID == "" {
 		wf.ID = generateRandomID(10)
@@ -77,6 +87,7 @@ func (s *WorkflowService) Create(wf Workflow) (Workflow, string, error) {
 }
 
 func (s *WorkflowService) Update(id string, wf Workflow) (Workflow, string, error) {
+	wf = sanitizeWorkflowForStorage(wf)
 	if !s.store.Exists(id) {
 		return wf, "", ErrWorkflowNotFound
 	}
@@ -128,12 +139,17 @@ func (s *WorkflowService) Import(raw []byte) (Workflow, string, error) {
 	if err := json.Unmarshal(raw, &wf); err != nil {
 		return Workflow{}, "", err
 	}
+	wf = sanitizeWorkflowForStorage(wf)
 	return s.Create(wf)
 }
 
 func (s *WorkflowService) Export(id string) ([]byte, error) {
-	_, raw, err := s.store.Get(id)
-	return raw, err
+	wf, _, err := s.store.Get(id)
+	if err != nil {
+		return nil, err
+	}
+	wf = sanitizeWorkflowForStorage(wf)
+	return json.MarshalIndent(wf, "", "  ")
 }
 
 // --- Validation ---
@@ -167,4 +183,32 @@ func generateRandomID(length int) string {
 		result[i] = chars[result[i]%byte(len(chars))]
 	}
 	return string(result)
+}
+
+func sanitizeWorkflowForStorage(wf Workflow) Workflow {
+	for i := range wf.Nodes {
+		wf.Nodes[i].Description = ""
+		wf.Nodes[i].Icon = ""
+		wf.Nodes[i].Tags = nil
+		wf.Nodes[i].Action = sanitizeActionForStorage(wf.Nodes[i].Action)
+	}
+	return wf
+}
+
+func sanitizeActionForStorage(action node.NodeAction) node.NodeAction {
+	clean := node.NodeAction{
+		Key:         action.Key,
+		ResponseVar: action.ResponseVar,
+		Fields:      make([]node.NodeField, 0, len(action.Fields)),
+	}
+	for _, field := range action.Fields {
+		if strings.TrimSpace(field.Key) == "" {
+			continue
+		}
+		clean.Fields = append(clean.Fields, node.NodeField{
+			Key:   field.Key,
+			Value: field.Value,
+		})
+	}
+	return clean
 }
