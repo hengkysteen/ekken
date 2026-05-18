@@ -6,7 +6,7 @@ export interface SystemConfig {
   mode: string
   data_dir: string
   plugin_dir: string
-  port: number
+  address: string
   repo_url: string
   author: string
 

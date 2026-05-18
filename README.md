@@ -10,11 +10,11 @@ Bridge the gap between **manual precision** and **autonomous intelligence**. Mos
 
 - [x] **Single Binary:** No external dependencies. Lightweight, fast, stays out of your way.
 - [x] **Full Control:** A purpose-built editor for those who know exactly what they want.
-- [x] **True Agnostic:** Swap providers or models freely — tool-call normalization across providers, no lost context.
+- [ ] **True Agnostic:** Swap providers or models freely — tool-call normalization across providers, no lost context.
 - [ ] **Assistant as Engineer:** Describe the chore, review the generated proposal, approve to save — then run it.
     - [x] Searches and stitches internal nodes.
     - [ ] Fetches from Plugin Hub when needed.
-    - [ ] Synthesizes new nodes on-the-fly when the library falls short. *(🙂‍↕️)*
+    - [ ] Synthesizes new nodes on-the-fly when the library falls short.🙂‍↕️
 - [ ] **Plugin Hub:** Remote fetching and management of curated, verified nodes.
 
 ---

@@ -12,15 +12,15 @@ const (
 	colorBold  = "\033[1m"
 )
 
-func PrintDev(version, host string, port int) {
-	printBanner(version, host, port, true)
+func PrintDev(version, address string) {
+	printBanner(version, address, true)
 }
 
-func PrintProd(version, host string, port int) {
-	printBanner(version, host, port, false)
+func PrintProd(version, address string) {
+	printBanner(version, address, false)
 }
 
-func printBanner(version, host string, port int, isDev bool) {
+func printBanner(version, address string, isDev bool) {
 	asciiArt := `
   ███████╗██╗  ██╗██╗  ██╗███████╗███╗   ██╗
   ██╔════╝██║ ██╔╝██║ ██╔╝██╔════╝████╗  ██║
@@ -36,10 +36,10 @@ func printBanner(version, host string, port int, isDev bool) {
 	if isDev {
 		fmt.Printf("  %s● %sMode:    %sDevelopment%s\n", colorBlue, colorBold, colorReset, colorReset)
 		fmt.Println()
-		fmt.Printf("  %s➜ %s API: %shttp://%s:%d%s\n", colorCyan, colorBold, colorReset, host, port, colorReset)
+		fmt.Printf("  %s➜ %s API: %shttp://%s%s\n", colorCyan, colorBold, colorReset, address, colorReset)
 		fmt.Printf("  %s➜ %s UI:  %scd ui && npm run dev%s\n", colorCyan, colorBold, colorGray, colorReset)
 	} else {
-		fmt.Printf("  %s➜ %s URL: %shttp://%s:%d%s\n", colorCyan, colorBold, colorReset, host, port, colorReset)
+		fmt.Printf("  %s➜ %s URL: %shttp://%s%s\n", colorCyan, colorBold, colorReset, address, colorReset)
 	}
 	fmt.Println()
 }

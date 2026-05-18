@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -10,6 +11,7 @@ type Config struct {
 	AppName    string
 	Host       string
 	Port       int
+	Address    string
 	DataDir    string
 	AppVersion string
 	PluginDir  string
@@ -31,10 +33,13 @@ var buildVersion = "v2026.5.10-alpha"
 
 func LoadConfig() Config {
 	dataDir := getEnv("EKKENDATA_DIR", defaultDataDir())
+	host := getEnv("EKKENAPI_HOST", "localhost")
+	port := getEnvInt("EKKENAPI_PORT", 11245)
 	return Config{
 		AppName:    "Ekken",
-		Host:       getEnv("EKKENAPI_HOST", "localhost"),
-		Port:       getEnvInt("EKKENAPI_PORT", 11245),
+		Host:       host,
+		Port:       port,
+		Address:    net.JoinHostPort(host, strconv.Itoa(port)),
 		DataDir:    dataDir,
 		AppVersion: buildVersion,
 		Mode:       mode,

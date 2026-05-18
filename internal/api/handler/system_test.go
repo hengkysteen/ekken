@@ -19,7 +19,7 @@ func TestGetSystemConfig(t *testing.T) {
 			AppName:    "Ekken Test",
 			DataDir:    "/tmp/ekken-data",
 			PluginDir:  "/tmp/ekken-data/plugins",
-			Port:       9090,
+			Address:    "localhost:9090",
 			AppVersion: "1.2.3",
 			Mode:       "development",
 			RepoURL:    "https://example.com/ekken",
@@ -60,7 +60,7 @@ func TestGetSystemConfig(t *testing.T) {
 	assertEqual("app_name", "Ekken Test")
 	assertEqual("data_dir", "/tmp/ekken-data")
 	assertEqual("plugin_dir", "/tmp/ekken-data/plugins")
-	assertEqual("port", float64(9090))
+	assertEqual("address", "localhost:9090")
 	assertEqual("app_version", "1.2.3")
 	assertEqual("mode", "development")
 	assertEqual("repo_url", "https://example.com/ekken")

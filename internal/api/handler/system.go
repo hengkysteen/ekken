@@ -16,7 +16,7 @@ func (h *Handler) GetSystemConfig(c *gin.Context) {
 			"app_name":    h.Config.AppName,
 			"data_dir":    h.Config.DataDir,
 			"plugin_dir":  h.Config.PluginDir,
-			"port":        h.Config.Port,
+			"address":     h.Config.Address,
 			"app_version": h.Config.AppVersion,
 			"mode":        h.Config.Mode,
 			"repo_url":    h.Config.RepoURL,

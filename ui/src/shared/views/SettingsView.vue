@@ -94,8 +94,8 @@
                   <el-text strong>{{ systemConfig.app_name }}</el-text>
                   <el-text type="info" size="small" style="margin-left: 8px">{{ systemConfig.app_version }}</el-text>
                 </el-descriptions-item>
-                <el-descriptions-item label="Server Port">
-                  <el-text tag="code">{{ systemConfig.port }}</el-text>
+                <el-descriptions-item label="Server Address">
+                  <el-text tag="code">{{ systemConfig.address }}</el-text>
                 </el-descriptions-item>
                 <el-descriptions-item label="Environment">
                   <el-text :type="systemConfig.mode === 'production' ? 'success' : 'warning'" strong>
@@ -143,7 +143,7 @@ const selectedKey = ref('general')
 const settingsStore = useAppSettingsStore()
 const dynamicTabs = computed(() => settingsStore.sortedSettingsTabs)
 const systemConfig = ref<SystemConfig>({
-  app_name: '', app_version: '', mode: '', data_dir: '', plugin_dir: '', port: 0, repo_url: '', author: ''
+  app_name: '', app_version: '', mode: '', data_dir: '', plugin_dir: '', address: '', repo_url: '', author: ''
 })
 const isRestarting = ref(false)
 

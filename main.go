@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"ekken/banner"
@@ -38,16 +37,14 @@ func main() {
 	embed.ServeEmbedded(engine, cfg.Mode)
 
 	// Print mode-specific info and start server
-	address := fmt.Sprintf(":%d", cfg.Port)
-
 	if cfg.Mode == "production" {
-		banner.PrintProd(cfg.AppVersion, cfg.Host, cfg.Port)
+		banner.PrintProd(cfg.AppVersion, cfg.Address)
 	} else {
-		banner.PrintDev(cfg.AppVersion, cfg.Host, cfg.Port)
+		banner.PrintDev(cfg.AppVersion, cfg.Address)
 	}
 
-	logger.Info("Server is running", "address", address)
-	if err := engine.Run(address); err != nil {
+	logger.Info("Server is running", "address", cfg.Address)
+	if err := engine.Run(cfg.Address); err != nil {
 		logger.Error("Server failed", "error", err)
 		os.Exit(1)
 	}
