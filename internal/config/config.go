@@ -45,6 +45,7 @@ func LoadConfig() Config {
 		Mode:       mode,
 		RepoURL:    "https://github.com/hengkysteen/ekken",
 		Author:     "hengkysteen",
+		PluginDir:  getEnv("EKKENPLUGIN_DIR", filepath.Join(dataDir, "plugins")),
 	}
 }
 
