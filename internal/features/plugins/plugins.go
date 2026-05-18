@@ -96,7 +96,7 @@ func (m *Manager) Load() error {
 func (m *Manager) pluginManifestPaths() ([]string, error) {
 	patterns := []string{
 		filepath.Join(m.pluginDir, "*", "plugin.json"),
-		filepath.Join(m.pluginDir, "nodes", "*", "plugin.json"),
+		filepath.Join(m.pluginDir, "*", "*", "plugin.json"),
 	}
 
 	seen := make(map[string]bool)

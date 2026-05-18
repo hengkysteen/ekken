@@ -234,9 +234,9 @@ func (s *PluginService) installPlugin(ctx context.Context, id string, plugin hub
 		return err
 	}
 
-	finalDir := filepath.Join(s.manager.pluginDir, id)
+	finalDir := filepath.Join(s.manager.pluginDir, manifest.Kind + "s", id)
 	s.updateInstallTask(id, InstallTask{PluginID: id, Status: InstallInstalling})
-	if err := os.MkdirAll(s.manager.pluginDir, 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(finalDir), 0o755); err != nil {
 		return err
 	}
 	if _, err := os.Stat(finalDir); err == nil {
