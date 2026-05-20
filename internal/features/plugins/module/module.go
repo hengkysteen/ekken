@@ -6,6 +6,7 @@ import (
 	"ekken/internal/db"
 	"ekken/internal/features/plugins"
 	"ekken/internal/features/plugins/kind"
+	"ekken/internal/features/plugins/passistant"
 	"ekken/internal/features/plugins/pnode"
 
 	"github.com/gin-gonic/gin"
@@ -23,6 +24,9 @@ func init() {
 	// Register plugin kinds
 	kind.Register("node", func(config kind.Config) kind.Kind {
 		return pnode.NewKind(config.ExecTimeout)
+	})
+	kind.Register("assistant", func(config kind.Config) kind.Kind {
+		return passistant.NewKind(config.ExecTimeout)
 	})
 
 	module.RegisterModule(NewModule())

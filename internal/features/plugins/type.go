@@ -27,8 +27,8 @@ type PluginService struct {
 type PluginSource string
 
 const (
-	SourceLocal  PluginSource = "local"
-	SourceRemote PluginSource = "remote"
+	SourceLocal PluginSource = "local"
+	SourceHub   PluginSource = "hub"
 )
 
 type PluginsState struct {

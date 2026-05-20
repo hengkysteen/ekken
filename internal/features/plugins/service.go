@@ -19,7 +19,7 @@ import (
 	"ekken/internal/features/plugins/kind"
 )
 
-const defaultPluginRegistryURL = "https://raw.githubusercontent.com/hengkysteen/ekken/refs/heads/main/hub/catalog.json"
+const defaultPluginRegistryURL = "https://raw.githubusercontent.com/hengkysteen/ekken-plugins/refs/heads/main/hub/catalog.json"
 
 func NewPluginService(appVersion, pluginDir string) (*PluginService, error) {
 	manager := NewManager(appVersion, pluginDir, 60*time.Second)
@@ -209,7 +209,7 @@ func (s *PluginService) installPlugin(ctx context.Context, id string, plugin hub
 		return fmt.Errorf("invalid plugin.json: %w", err)
 	}
 	if manifest.Source == "" {
-		manifest.Source = SourceRemote
+		manifest.Source = SourceHub
 	}
 	if err := validateManifest(manifest); err != nil {
 		return err
@@ -234,7 +234,7 @@ func (s *PluginService) installPlugin(ctx context.Context, id string, plugin hub
 		return err
 	}
 
-	finalDir := filepath.Join(s.manager.pluginDir, manifest.Kind + "s", id)
+	finalDir := filepath.Join(s.manager.pluginDir, manifest.Kind+"s", id)
 	s.updateInstallTask(id, InstallTask{PluginID: id, Status: InstallInstalling})
 	if err := os.MkdirAll(filepath.Dir(finalDir), 0o755); err != nil {
 		return err

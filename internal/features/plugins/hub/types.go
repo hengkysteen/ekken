@@ -10,7 +10,6 @@ type RegistryResponse struct {
 
 type RegistryPluginSummary struct {
 	ID           string             `json:"id"`
-	Source       string             `json:"source"`
 	Name         string             `json:"name"`
 	Kind         string             `json:"kind"`
 	Version      string             `json:"version"`
