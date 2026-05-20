@@ -16,30 +16,30 @@ func TestJsonNode_Execute(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:   "simple key access",
-			config: map[string]any{"input": "{{my_input}}", "path": "name"},
-			input:  map[string]any{"name": "John", "age": 30},
+			name:       "simple key access",
+			config:     map[string]any{"input": "{{my_input}}", "path": "name"},
+			input:      map[string]any{"name": "John", "age": 30},
 			wantHandle: "success",
 			wantResult: "John",
 		},
 		{
-			name:   "nested key access",
-			config: map[string]any{"input": "{{my_input}}", "path": "user.name"},
-			input:  map[string]any{"user": map[string]any{"name": "Jane", "age": 25}},
+			name:       "nested key access",
+			config:     map[string]any{"input": "{{my_input}}", "path": "user.name"},
+			input:      map[string]any{"user": map[string]any{"name": "Jane", "age": 25}},
 			wantHandle: "success",
 			wantResult: "Jane",
 		},
 		{
-			name:   "array index access",
-			config: map[string]any{"input": "{{my_input}}", "path": "items[0]"},
-			input:  map[string]any{"items": []any{"first", "second", "third"}},
+			name:       "array index access",
+			config:     map[string]any{"input": "{{my_input}}", "path": "items[0]"},
+			input:      map[string]any{"items": []any{"first", "second", "third"}},
 			wantHandle: "success",
 			wantResult: "first",
 		},
 		{
-			name:   "nested array access",
-			config: map[string]any{"input": "{{my_input}}", "path": "data.items[1]"},
-			input:  map[string]any{"data": map[string]any{"items": []any{"a", "b", "c"}}},
+			name:       "nested array access",
+			config:     map[string]any{"input": "{{my_input}}", "path": "data.items[1]"},
+			input:      map[string]any{"data": map[string]any{"items": []any{"a", "b", "c"}}},
 			wantHandle: "success",
 			wantResult: "b",
 		},
@@ -60,29 +60,29 @@ func TestJsonNode_Execute(t *testing.T) {
 			wantResult: "Hello, world!",
 		},
 		{
-			name:   "multiple array indices",
-			config: map[string]any{"input": "{{my_input}}", "path": "matrix[0]"},
-			input:  map[string]any{"matrix": []any{[]any{1, 2, 3}, []any{4, 5, 6}}},
+			name:       "multiple array indices",
+			config:     map[string]any{"input": "{{my_input}}", "path": "matrix[0]"},
+			input:      map[string]any{"matrix": []any{[]any{1, 2, 3}, []any{4, 5, 6}}},
 			wantHandle: "success",
 			wantResult: []any{1, 2, 3},
 		},
 		{
 			name:        "empty path",
-			config: map[string]any{"input": "{{my_input}}", "path": ""},
+			config:      map[string]any{"input": "{{my_input}}", "path": ""},
 			input:       map[string]any{"key": "value"},
 			wantErr:     true,
 			errContains: "path is required",
 		},
 		{
 			name:        "nil input",
-			config: map[string]any{"input": "{{my_input}}", "path": "key"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "key"},
 			input:       nil,
 			wantErr:     true,
 			errContains: "cannot access",
 		},
 		{
 			name:        "key not found",
-			config: map[string]any{"input": "{{my_input}}", "path": "missing"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "missing"},
 			input:       map[string]any{"key": "value"},
 			wantHandle:  "error",
 			wantErr:     true,
@@ -90,7 +90,7 @@ func TestJsonNode_Execute(t *testing.T) {
 		},
 		{
 			name:        "nested key not found",
-			config: map[string]any{"input": "{{my_input}}", "path": "user.missing"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "user.missing"},
 			input:       map[string]any{"user": map[string]any{"name": "John"}},
 			wantHandle:  "error",
 			wantErr:     true,
@@ -98,7 +98,7 @@ func TestJsonNode_Execute(t *testing.T) {
 		},
 		{
 			name:        "index out of range",
-			config: map[string]any{"input": "{{my_input}}", "path": "items[5]"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "items[5]"},
 			input:       map[string]any{"items": []any{"a", "b"}},
 			wantHandle:  "error",
 			wantErr:     true,
@@ -106,7 +106,7 @@ func TestJsonNode_Execute(t *testing.T) {
 		},
 		{
 			name:        "negative index",
-			config: map[string]any{"input": "{{my_input}}", "path": "items[-1]"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "items[-1]"},
 			input:       map[string]any{"items": []any{"a", "b"}},
 			wantHandle:  "error",
 			wantErr:     true,
@@ -114,7 +114,7 @@ func TestJsonNode_Execute(t *testing.T) {
 		},
 		{
 			name:        "invalid index format",
-			config: map[string]any{"input": "{{my_input}}", "path": "items[abc]"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "items[abc]"},
 			input:       map[string]any{"items": []any{"a", "b"}},
 			wantHandle:  "error",
 			wantErr:     true,
@@ -122,7 +122,7 @@ func TestJsonNode_Execute(t *testing.T) {
 		},
 		{
 			name:        "access array on non-array",
-			config: map[string]any{"input": "{{my_input}}", "path": "name[0]"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "name[0]"},
 			input:       map[string]any{"name": "John"},
 			wantHandle:  "error",
 			wantErr:     true,
@@ -130,7 +130,7 @@ func TestJsonNode_Execute(t *testing.T) {
 		},
 		{
 			name:        "access key on non-object",
-			config: map[string]any{"input": "{{my_input}}", "path": "items.name"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "items.name"},
 			input:       map[string]any{"items": []any{"a", "b"}},
 			wantHandle:  "error",
 			wantErr:     true,
@@ -138,7 +138,7 @@ func TestJsonNode_Execute(t *testing.T) {
 		},
 		{
 			name:        "access on nil value",
-			config: map[string]any{"input": "{{my_input}}", "path": "user.name"},
+			config:      map[string]any{"input": "{{my_input}}", "path": "user.name"},
 			input:       map[string]any{"user": nil},
 			wantHandle:  "error",
 			wantErr:     true,
@@ -162,37 +162,37 @@ func TestJsonNode_Execute(t *testing.T) {
 			wantResult: "deep value",
 		},
 		{
-			name:   "number value",
-			config: map[string]any{"input": "{{my_input}}", "path": "count"},
-			input:  map[string]any{"count": 42},
+			name:       "number value",
+			config:     map[string]any{"input": "{{my_input}}", "path": "count"},
+			input:      map[string]any{"count": 42},
 			wantHandle: "success",
 			wantResult: 42,
 		},
 		{
-			name:   "boolean value",
-			config: map[string]any{"input": "{{my_input}}", "path": "active"},
-			input:  map[string]any{"active": true},
+			name:       "boolean value",
+			config:     map[string]any{"input": "{{my_input}}", "path": "active"},
+			input:      map[string]any{"active": true},
 			wantHandle: "success",
 			wantResult: true,
 		},
 		{
-			name:   "null value",
-			config: map[string]any{"input": "{{my_input}}", "path": "nullable"},
-			input:  map[string]any{"nullable": nil},
+			name:       "null value",
+			config:     map[string]any{"input": "{{my_input}}", "path": "nullable"},
+			input:      map[string]any{"nullable": nil},
 			wantHandle: "success",
 			wantResult: nil,
 		},
 		{
-			name:   "array as final result",
-			config: map[string]any{"input": "{{my_input}}", "path": "items"},
-			input:  map[string]any{"items": []any{1, 2, 3}},
+			name:       "array as final result",
+			config:     map[string]any{"input": "{{my_input}}", "path": "items"},
+			input:      map[string]any{"items": []any{1, 2, 3}},
 			wantHandle: "success",
 			wantResult: []any{1, 2, 3},
 		},
 		{
-			name:   "object as final result",
-			config: map[string]any{"input": "{{my_input}}", "path": "user"},
-			input:  map[string]any{"user": map[string]any{"name": "John", "age": 30}},
+			name:       "object as final result",
+			config:     map[string]any{"input": "{{my_input}}", "path": "user"},
+			input:      map[string]any{"user": map[string]any{"name": "John", "age": 30}},
 			wantHandle: "success",
 			wantResult: map[string]any{"name": "John", "age": 30},
 		},
@@ -237,6 +237,80 @@ func TestJsonNode_Execute(t *testing.T) {
 
 			if result.Type == nil || result.Type.Mime != "application/json" {
 				t.Errorf("Execute() type = %v, want application/json", result.Type)
+			}
+		})
+	}
+}
+
+func TestJsonNode_ExtractStream(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      any
+		path       string
+		wantResult any
+	}{
+		{
+			name: "sse data",
+			input: "data: {\"delta\":\"Hello\"}\n\n" +
+				"data: {\"delta\":\" world\"}\n\n" +
+				"data: [DONE]\n\n",
+			path:       "delta",
+			wantResult: []any{"Hello", " world"},
+		},
+		{
+			name:       "jsonl",
+			input:      "{\"id\":1,\"name\":\"Alice\"}\n{\"id\":2,\"name\":\"Bob\"}\n",
+			path:       "name",
+			wantResult: []any{"Alice", "Bob"},
+		},
+		{
+			name:       "array",
+			input:      []any{map[string]any{"id": 1}, map[string]any{"id": 2}},
+			path:       "id",
+			wantResult: []any{1, 2},
+		},
+		{
+			name: "http response body sse with body data path",
+			input: map[string]any{
+				"body": "data: {\"choices\":[{\"delta\":{\"content\":\"1\"}}]}\n\n" +
+					"data: {\"choices\":[{\"delta\":{\"content\":\" +\"}}]}\n\n" +
+					"data: [DONE]\n\n",
+			},
+			path: "body.data.choices[0]",
+			wantResult: []any{
+				map[string]any{"delta": map[string]any{"content": "1"}},
+				map[string]any{"delta": map[string]any{"content": " +"}},
+			},
+		},
+		{
+			name: "empty path returns stream items",
+			input: "data: {\"id\":1}\n\n" +
+				"data: {\"id\":2}\n\n",
+			wantResult: []any{map[string]any{"id": float64(1)}, map[string]any{"id": float64(2)}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			n := &JsonNode{Action: node.ActionFromMap(map[string]any{
+				"action": "extract_stream",
+				"input":  "{{my_input}}",
+				"path":   tt.path,
+			})}
+			ctx := &node.NodeContext{
+				Stop:      make(chan struct{}),
+				Variables: map[string]interface{}{"my_input": tt.input},
+			}
+
+			result, err := n.Execute(ctx)
+			if err != nil {
+				t.Fatalf("Execute() error = %v", err)
+			}
+			if result.Handle != "success" {
+				t.Fatalf("handle = %q, want success", result.Handle)
+			}
+			if !deepEqual(result.Response, tt.wantResult) {
+				t.Fatalf("response = %#v, want %#v", result.Response, tt.wantResult)
 			}
 		})
 	}
@@ -350,7 +424,7 @@ func deepEqual(a, b any) bool {
 	if a == nil || b == nil {
 		return false
 	}
-	
+
 	switch va := a.(type) {
 	case []any:
 		vb, ok := b.([]any)

@@ -15,13 +15,10 @@ import (
 )
 
 func main() {
-	// Initialize CLI and Load Config
 	cfg := cmd.Execute()
 
-	// Initialize logging
 	logger.NewCleanLogger(cfg.Verbose)
 
-	// Initialize database
 	database, err := db.Open(cfg.DataDir)
 	if err != nil {
 		logger.Error("Failed to open database", "error", err, "dir", cfg.DataDir)
@@ -29,14 +26,11 @@ func main() {
 	}
 	defer database.Close()
 
-	// Create server (Modules are auto-registered via blank imports and initialized in NewServer)
 	server := api.NewServer(cfg, database)
 	engine := server.Engine()
 
-	// Serve embedded UI
 	embed.ServeEmbedded(engine, cfg.Mode)
 
-	// Print mode-specific info and start server
 	if cfg.Mode == "production" {
 		banner.PrintProd(cfg.AppVersion, cfg.Address)
 	} else {

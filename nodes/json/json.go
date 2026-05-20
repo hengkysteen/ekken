@@ -27,10 +27,10 @@ func init() {
 			DefaultAction: "extract",
 			Actions: []node.NodeAction{
 				{
-					Key:         "extract",
-					Label:       "Extract",
-					Description: "Extract a value by path",
-					HasResponse: true,
+					Key:          "extract",
+					Label:        "Extract",
+					Description:  "Extract a value by path",
+					HasResponse:  true,
 					ResponseType: &node.NodeResponseType{Mime: "application/json", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{
@@ -49,6 +49,31 @@ func init() {
 					AutoLayout: [][]node.AutoLayout{
 						{{Key: "input", Component: "textarea", Flex: 24, Options: map[string]any{"helper": "JSON data or variable to extract from"}}},
 						{{Key: "path", Component: "input", Flex: 24, Options: map[string]any{"helper": "Dot-notation path to extract"}}},
+					},
+				},
+				{
+					Key:          "extract_stream",
+					Label:        "Extract Stream",
+					Description:  "Extract values from SSE, JSONL, or JSON array data",
+					HasResponse:  true,
+					ResponseType: &node.NodeResponseType{Mime: "application/json", Charset: "utf-8"},
+					Fields: []node.NodeField{
+						{
+							Key:      "input",
+							Type:     "string",
+							Required: true,
+							Label:    "Input",
+						},
+						{
+							Key:      "path",
+							Type:     "string",
+							Required: false,
+							Label:    "JSON path",
+						},
+					},
+					AutoLayout: [][]node.AutoLayout{
+						{{Key: "input", Component: "textarea", Flex: 24, Options: map[string]any{"helper": "SSE, JSONL, JSON array, or variable to extract from"}}},
+						{{Key: "path", Component: "input", Flex: 24, Options: map[string]any{"helper": "Path applied to each stream item. Leave empty to return all items."}}},
 					},
 				},
 			},
@@ -70,9 +95,19 @@ func (n *JsonNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, err
 	default:
 	}
 
+	action := n.Action.Key
+	if action == "" {
+		action = "extract"
+	}
+	if action != "extract" && action != "extract_stream" {
+		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("unknown action: %s", action)
+	}
+
 	path, _ := node.FieldValue(n.Action, "path").(string)
 	if path == "" {
-		return node.NodeExecutionResult{}, fmt.Errorf("path is required")
+		if action == "extract" {
+			return node.NodeExecutionResult{}, fmt.Errorf("path is required")
+		}
 	}
 
 	inputRaw, _ := node.FieldValue(n.Action, "input").(string)
@@ -110,7 +145,13 @@ func (n *JsonNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, err
 		}
 	}
 
-	result, err := traverse(data, path)
+	var result any
+	var err error
+	if action == "extract_stream" {
+		result, err = extractStream(data, path)
+	} else {
+		result, err = traverse(data, path)
+	}
 	if err != nil {
 		return node.NodeExecutionResult{Handle: "error"}, err
 	}
@@ -188,7 +229,167 @@ func traverse(data any, path string) (any, error) {
 	return current, nil
 }
 
-// splitPath splits "body.choices[0].message.content" into ["body", "choices[0]", "message", "content"]
+func coerceExtractableString(data any) any {
+	raw, ok := data.(string)
+	if !ok {
+		return data
+	}
+
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return data
+	}
+
+	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+		var parsed any
+		if err := json.Unmarshal([]byte(trimmed), &parsed); err == nil {
+			return parsed
+		}
+	}
+
+	return data
+}
+
+func extractStream(data any, path string) (any, error) {
+	source, itemPath, err := streamSourceAndPath(data, path)
+	if err != nil {
+		return nil, err
+	}
+	items, err := parseStreamItems(source)
+	if err != nil {
+		return nil, err
+	}
+	if itemPath == "" {
+		return items, nil
+	}
+
+	results := make([]any, 0, len(items))
+	var firstErr error
+	for i, item := range items {
+		value, err := traverse(item, itemPath)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("item %d: %v", i, err)
+			}
+			continue
+		}
+		results = append(results, value)
+	}
+	if len(results) == 0 && firstErr != nil {
+		return nil, firstErr
+	}
+	return results, nil
+}
+
+func streamSourceAndPath(data any, path string) (any, string, error) {
+	if path == "data" {
+		return data, "", nil
+	}
+	if after, ok := strings.CutPrefix(path, "data."); ok {
+		return data, after, nil
+	}
+
+	if before, after, ok := strings.Cut(path, ".data"); ok {
+		if after != "" && !strings.HasPrefix(after, ".") {
+			return data, path, nil
+		}
+		source, err := traverse(data, before)
+		if err != nil {
+			return nil, "", err
+		}
+		return source, strings.TrimPrefix(after, "."), nil
+	}
+
+	return data, path, nil
+}
+
+func parseStreamItems(data any) ([]any, error) {
+	data = coerceExtractableString(data)
+	switch v := data.(type) {
+	case []any:
+		return v, nil
+	case string:
+		trimmed := strings.TrimSpace(v)
+		if trimmed == "" {
+			return nil, fmt.Errorf("stream input is empty")
+		}
+		if items, ok := parseSSEItems(trimmed); ok {
+			return items, nil
+		}
+		if items, ok := parseJSONLItems(trimmed); ok {
+			return items, nil
+		}
+		return nil, fmt.Errorf("unsupported stream input")
+	default:
+		return []any{v}, nil
+	}
+}
+
+func parseSSEItems(raw string) ([]any, bool) {
+	items := make([]any, 0)
+
+	normalized := strings.ReplaceAll(raw, "\r\n", "\n")
+	for _, block := range strings.Split(normalized, "\n\n") {
+		var dataLines []string
+
+		for _, line := range strings.Split(block, "\n") {
+			line = strings.TrimSpace(line)
+
+			if line == "" || strings.HasPrefix(line, ":") {
+				continue
+			}
+
+			field, value, ok := strings.Cut(line, ":")
+			if !ok {
+				continue
+			}
+			field = strings.TrimSpace(field)
+			value = strings.TrimSpace(value)
+
+			if field == "data" {
+				dataLines = append(dataLines, value)
+			}
+		}
+		if len(dataLines) == 0 {
+			continue
+		}
+
+		dataRaw := strings.Join(dataLines, "\n")
+
+		var parsed any
+		if err := json.Unmarshal([]byte(dataRaw), &parsed); err != nil {
+			items = append(items, dataRaw)
+		} else {
+			items = append(items, parsed)
+		}
+	}
+
+	if len(items) == 0 {
+		return nil, false
+	}
+	return items, true
+}
+
+func parseJSONLItems(raw string) ([]any, bool) {
+	items := make([]any, 0)
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		var item any
+		if err := json.Unmarshal([]byte(line), &item); err != nil {
+			return nil, false
+		}
+		items = append(items, item)
+	}
+	if len(items) == 0 {
+		return nil, false
+	}
+	return items, true
+}
+
 func splitPath(path string) []string {
 	return strings.Split(path, ".")
 }

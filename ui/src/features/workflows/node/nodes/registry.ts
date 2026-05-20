@@ -1,6 +1,5 @@
 import { type Component } from 'vue'
 import AutoNodeForm from '../components/EkAutoNodeForm.vue'
-import HttpNodeForm from './http/HttpNodeForm.vue'
 
 type NodeResolver = (type: string) => Component | undefined
 
@@ -11,7 +10,7 @@ export function registerNodeResolver(resolver: NodeResolver) {
 }
 
 const registry: Record<string, Component> = {
-  'http': HttpNodeForm,
+  // Register nodes here that require a custom form component instead of the auto-generated one.
 }
 export function getNodeFormComponent(type: string): Component {
   if (registry[type]) return registry[type]

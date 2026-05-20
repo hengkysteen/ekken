@@ -1,6 +1,9 @@
 <template>
   <div style="width: 100%;">
-    <el-form label-position="top" @submit.prevent>
+    <template v-if="!nodeDef">
+      <EkNodeNotFound :node="props.node" />
+    </template>
+    <el-form v-else label-position="top" @submit.prevent>
 
 
       <el-form-item v-if="nodeDef?.actions?.length" label="Action" :for="`action-${node?.id}`">
@@ -32,6 +35,7 @@ import {
   serializeActionForSave
 } from '@workflows/node/utils/node'
 import EkDynamicForm from './EkDynamicForm.vue'
+import EkNodeNotFound from './EkNodeNotFound.vue'
 import type { NodeFormProps, NodeDefinition } from '@workflows/node/types/node'
 
 const props = defineProps<NodeFormProps>()
