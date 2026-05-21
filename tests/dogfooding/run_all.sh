@@ -96,7 +96,21 @@ for USECASE_DIR in "$DOGFOODING_DIR"/usecase*; do
             HAS_ERROR=$(echo "$LOGS" | grep -o '"level":"error"')
             
             if [ -z "$HAS_ERROR" ]; then
-                echo "   ✅ PASSED (No errors)"
+                SCREENSHOT_PATHS=$(grep -o '"key": *"path", *"value": *"[^"]*\.png"' "$WORKFLOW_FILE" | sed 's/.*"value": *"//' | sed 's/"$//')
+                ARTIFACT_ERROR=""
+                for SCREENSHOT_PATH in $SCREENSHOT_PATHS; do
+                    FULL_SCREENSHOT_PATH="$PROJECT_ROOT/$SCREENSHOT_PATH"
+                    if [ ! -s "$FULL_SCREENSHOT_PATH" ]; then
+                        ARTIFACT_ERROR="$SCREENSHOT_PATH"
+                        break
+                    fi
+                done
+
+                if [ -n "$ARTIFACT_ERROR" ]; then
+                    echo "   ❌ FAILED (Missing or empty artifact: $ARTIFACT_ERROR)"
+                else
+                    echo "   ✅ PASSED (No errors)"
+                fi
             else
                 echo "   ❌ FAILED (Errors found in logs)"
             fi

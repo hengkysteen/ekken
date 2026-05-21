@@ -1,96 +1,109 @@
 {
   "id": "e2e-test-ekken",
-  "name": "E2E Test: Open Settings and Screenshot",
+  "name": "E2E Test: Open Credentials and Screenshot",
   "created_by": "system",
   "nodes": [
     {
-      "id": "trigger-1",
+      "id": "n1",
       "type": "timer",
-      "config": {
-        "action": "manual"
+      "action": {
+        "type": "manual",
+        "fields": []
       }
     },
     {
-      "id": "chrome-1",
+      "id": "n2",
       "type": "google_chrome",
-      "config": {
-        "action": "launch",
-        "headless": true,
-        "port": 9222
+      "action": {
+        "type": "launch",
+        "fields": [
+          { "key": "headless", "value": true },
+          { "key": "port", "value": 9222 }
+        ]
       }
     },
     {
-      "id": "browser-1",
+      "id": "n3",
       "type": "chromedp",
-      "config": {
-        "action": "navigate",
-        "url": "http://localhost:3033"
+      "action": {
+        "type": "navigate",
+        "fields": [
+          { "key": "url", "value": "http://localhost:3033" }
+        ]
       }
     },
     {
-      "id": "browser-2",
+      "id": "n4",
       "type": "chromedp",
-      "config": {
-        "action": "click",
-        "selector": "//span[contains(.,\"Settings\")]",
-        "selector_type": "xpath"
+      "action": {
+        "type": "click",
+        "fields": [
+          { "key": "selector", "value": "//span[contains(.,\"Credentials\")]" },
+          { "key": "selector_type", "value": "xpath" }
+        ]
       }
     },
     {
-      "id": "delay-1",
+      "id": "n5",
       "type": "delay",
-      "config": {
-        "action": "seconds",
-        "duration": 1.0
+      "action": {
+        "type": "seconds",
+        "fields": [
+          { "key": "duration", "value": 1.0 }
+        ]
       }
     },
     {
-      "id": "browser-3",
+      "id": "n6",
       "type": "chromedp",
-      "config": {
-        "action": "screenshot",
-        "path": "tests/dogfooding/data/screenshot_settings.png",
-        "full_page": true
+      "action": {
+        "type": "screenshot",
+        "fields": [
+          { "key": "path", "value": "tests/dogfooding/data/screenshot_credentials.png" },
+          { "key": "full_page", "value": true }
+        ]
       }
     },
     {
-      "id": "chrome-terminate",
+      "id": "n7",
       "type": "google_chrome",
-      "config": {
-        "action": "terminate",
-        "port": 9222
+      "action": {
+        "type": "terminate",
+        "fields": [
+          { "key": "port", "value": 9222 }
+        ]
       }
     }
   ],
   "edges": [
     {
-      "source": "trigger-1",
-      "target": "chrome-1",
+      "source": "n1",
+      "target": "n2",
       "sourceHandle": "success"
     },
     {
-      "source": "chrome-1",
-      "target": "browser-1",
+      "source": "n2",
+      "target": "n3",
       "sourceHandle": "success"
     },
     {
-      "source": "browser-1",
-      "target": "browser-2",
+      "source": "n3",
+      "target": "n4",
       "sourceHandle": "success"
     },
     {
-      "source": "browser-2",
-      "target": "delay-1",
+      "source": "n4",
+      "target": "n5",
       "sourceHandle": "success"
     },
     {
-      "source": "delay-1",
-      "target": "browser-3",
+      "source": "n5",
+      "target": "n6",
       "sourceHandle": "success"
     },
     {
-      "source": "browser-3",
-      "target": "chrome-terminate",
+      "source": "n6",
+      "target": "n7",
       "sourceHandle": "success"
     }
   ]

@@ -1,15 +1,15 @@
-Usecase 1: Settings Page Navigation & Screenshot
+Usecase 1: Credentials Page Navigation & Screenshot
 
 Description:
-This test validates the end-to-end flow of navigating to the Settings page and capturing its visual state. It performs the following steps:
+This test validates the end-to-end flow of navigating to the Credentials page and capturing its visual state. It performs the following steps:
 1. Launch: Starts a headless Google Chrome instance on port 9222.
 2. Navigate: Opens the Ekken application UI at http://localhost:3033.
-3. Interaction: Locates and clicks the "Settings" menu in the sidebar using an XPath selector: //span[contains(.,"Settings")].
+3. Interaction: Locates and clicks the "Credentials" menu in the sidebar using an XPath selector: //span[contains(.,"Credentials")].
 4. Wait: Pauses for 1.0 second to allow the SPA route transition and UI rendering to complete.
-5. Screenshot: Captures a full-page screenshot of the Settings page and saves it to tests/dogfooding/data/screenshot_settings.png.
+5. Screenshot: Captures a full-page screenshot of the Credentials page and saves it to tests/dogfooding/data/screenshot_credentials.png.
 6. Cleanup: Terminates the Chrome browser instance.
 
 Expectations:
 - The workflow execution must return an "idle" status indicating successful completion.
 - No "error" level logs should be produced during the execution.
-- The resulting screenshot must accurately display the Ekken Settings interface, including system information and resource monitoring toggles.
+- The resulting screenshot must accurately display the Ekken Credentials interface.
