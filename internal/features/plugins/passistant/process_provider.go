@@ -17,7 +17,7 @@ import (
 type ProcessRunner struct {
 	ID           string
 	Name         string
-	Logo         string
+	Icon         string
 	OfficialURL  string
 	ConfigFields []string
 	Config       map[string]string
@@ -30,7 +30,7 @@ func NewProcessRunner(runner RunnerSpec, provider ProviderSpec, sourcePath strin
 	return &ProcessRunner{
 		ID:           provider.ID,
 		Name:         provider.Name,
-		Logo:         provider.Logo,
+		Icon:         provider.Icon,
 		OfficialURL:  provider.OfficialURL,
 		ConfigFields: provider.ConfigFields,
 		Config:       make(map[string]string),

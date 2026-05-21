@@ -21,7 +21,7 @@ func decodePluginSpec(plugin kind.Plugin) (PluginSpec, error) {
 	}
 
 	if len(wrapped.Node) > 0 {
-		var nodeSpec node.NodeSpec
+		var nodeSpec node.Spec
 		if err := json.Unmarshal(wrapped.Node, &nodeSpec); err != nil {
 			return PluginSpec{}, fmt.Errorf("failed to unmarshal spec.node: %w", err)
 		}
@@ -31,7 +31,7 @@ func decodePluginSpec(plugin kind.Plugin) (PluginSpec, error) {
 		}, nil
 	}
 
-	var legacyNodeSpec node.NodeSpec
+	var legacyNodeSpec node.Spec
 	if err := json.Unmarshal(plugin.Spec, &legacyNodeSpec); err != nil {
 		return PluginSpec{}, fmt.Errorf("failed to unmarshal spec.node: %w", err)
 	}
@@ -50,7 +50,7 @@ func ValidateManifest(plugin kind.Plugin) error {
 	return validateNodeSpec(spec.Node)
 }
 
-func validateNodeSpec(nodeDef node.NodeSpec) error {
+func validateNodeSpec(nodeDef node.Spec) error {
 	if nodeDef.Type == "" {
 		return fmt.Errorf("plugin.node.type is required")
 	}

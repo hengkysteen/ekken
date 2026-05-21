@@ -2,23 +2,23 @@
   <AppPage title="Plugins" subtitle="Manage and monitor the status of installed plugins and their node types."
     scrollable>
     <template #header-extra>
-      <el-button :icon="Document" @click="$router.push({ name: 'plugins-hub' })"> Hub </el-button>
+      <el-button :icon="Cloudy" @click="$router.push({ name: 'plugins-hub' })"> Hub </el-button>
     </template>
     <el-alert v-if="error" :title="error" type="error" :closable="false" style="margin-bottom: 20px;" />
     <div class="plugin-list-container">
       <el-empty v-if="initialized && !loading && plugins.length === 0" description="No plugins found" />
       <el-table v-else :data="plugins" style="width: 100%" class="plugin-table">
-        <el-table-column label="Plugin Name" min-width="160">
+        <el-table-column label="Plugin Name" min-width="100">
           <template #default="{ row }">
             <div class="plugin-identity">
-
-              <el-image v-if="row.manifest.node?.icon" style="width: 20px; height: 20px" :src="row.manifest.node.icon" />
-              <span class="plugin-label">{{ row.manifest.node?.label || row.id }}</span>
-
+              <el-image style="width: 18px; height: 18px" :src="row.icon">
+              </el-image>
+              <span class="plugin-label">
+                {{ row.id }}
+              </span>
             </div>
           </template>
         </el-table-column>
-
         <el-table-column label="Source">
           <template #default="{ row }">
             {{ row.manifest.source }}
@@ -40,7 +40,6 @@
               @click="handleAction(row, row.is_enabled ? 'disable' : 'enable')">
               {{ row.is_enabled ? 'Disable' : 'Enable' }}
             </el-button>
-
           </template>
         </el-table-column>
       </el-table>
@@ -50,7 +49,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Document } from '@element-plus/icons-vue'
+import { Cloudy, } from '@element-plus/icons-vue'
 import { pluginsApi as api } from '@plugins/api'
 import type { PluginSummary } from '@plugins/api'
 import AppPage from '@shared/components/AppPage.vue'
@@ -70,7 +69,6 @@ async function loadPlugins() {
     initialized.value = true
   }
 }
-
 const handleAction = async (row: PluginSummary, action: string) => {
   try {
     await api.managePlugin(row.id, action)

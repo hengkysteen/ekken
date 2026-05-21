@@ -55,7 +55,7 @@ func (h *Handler) Enable(plugin kind.Plugin) error {
 	h.executors[spec.Node.Type] = executor
 
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec:        spec.Node,
+		Spec:            spec.Node,
 		ExecutorFactory: h.createExecutorFactory(spec.Node.Type, executor),
 	})
 
@@ -71,7 +71,7 @@ func (h *Handler) Disable(id string) error {
 
 // createExecutorFactory creates a factory function for node executors.
 func (h *Handler) createExecutorFactory(nodeType string, executor kind.Executor) node.NodeExecutorFactory {
-	return func(action node.NodeAction) node.NodeExecutor {
+	return func(action node.Action) node.NodeExecutor {
 		config := make(map[string]interface{})
 		for _, f := range action.Fields {
 			val := f.Value
@@ -80,7 +80,7 @@ func (h *Handler) createExecutorFactory(nodeType string, executor kind.Executor)
 			}
 			config[f.Key] = val
 		}
-		config["action"] = action.Key
+		config["action"] = action.Label
 
 		return &PluginProcessExecutor{
 			executor: executor.(*Executor),

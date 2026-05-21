@@ -10,6 +10,17 @@ import (
 	"ekken/internal/features/plugins/kind"
 )
 
+type PluginList struct {
+	ID          string   `json:"id"`
+	Icon        string   `json:"icon,omitempty"`
+	Manifest    Manifest `json:"manifest"`
+	SourcePath  string   `json:"source_path"`
+	Status      string   `json:"status"`
+	Reason      string   `json:"reason,omitempty"`
+	IsInstalled bool     `json:"is_installed"`
+	IsEnabled   bool     `json:"is_enabled"`
+}
+
 type Manifest struct {
 	Source PluginSource    `json:"source"`
 	Kind   string          `json:"kind"`
@@ -57,16 +68,6 @@ func (p *runtimePlugin) kindPlugin(id string) kind.Plugin {
 	}
 }
 
-type PluginSummary struct {
-	ID          string   `json:"id"`
-	Manifest    Manifest `json:"manifest"`
-	SourcePath  string   `json:"source_path"`
-	Status      string   `json:"status"`
-	Reason      string   `json:"reason,omitempty"`
-	IsInstalled bool     `json:"is_installed"`
-	IsEnabled   bool     `json:"is_enabled"`
-}
-
 type InstallStatus string
 
 const (
@@ -95,7 +96,7 @@ type installTaskState struct {
 }
 
 type PluginServicer interface {
-	List() []PluginSummary
+	List() []PluginList
 	Reload() error
 	Manage(id string, action string) error
 	Registry(ctx context.Context) (hub.RegistryResponse, error)

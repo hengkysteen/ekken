@@ -29,8 +29,8 @@ func (r *RunnerSpec) UnmarshalJSON(data []byte) error {
 }
 
 type PluginSpec struct {
-	Runner RunnerSpec    `json:"runner"`
-	Node   node.NodeSpec `json:"node"`
+	Runner RunnerSpec `json:"runner"`
+	Node   node.Spec  `json:"node"`
 }
 
 // ExecuteRequest is the request sent to node plugin binaries

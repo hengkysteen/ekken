@@ -14,7 +14,7 @@ type ModelSpecEntry struct {
 type ProviderSpec struct {
 	ID           string           `json:"id"`
 	Name         string           `json:"name"`
-	Logo         string           `json:"logo"`
+	Icon         string           `json:"icon"`
 	OfficialURL  string           `json:"official_url"`
 	ConfigFields []string         `json:"config_fields"`
 	Models       []ModelSpecEntry `json:"models"`

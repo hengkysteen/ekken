@@ -2,9 +2,11 @@ package plugins
 
 import (
 	"ekken/internal/features/plugins/kind"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 )
@@ -40,14 +42,34 @@ func (m *Manager) SetFileSystem(fs FileSystem) {
 }
 
 // List returns summaries of all loaded plugins.
-func (m *Manager) List() []PluginSummary {
+func (m *Manager) List() []PluginList {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	summaries := make([]PluginSummary, 0, len(m.plugins))
+	summaries := make([]PluginList, 0, len(m.plugins))
 	for id, plugin := range m.plugins {
-		summaries = append(summaries, PluginSummary{
+		var iconStr string
+		if len(plugin.manifest.Spec) > 0 {
+			var spec struct {
+				Node struct {
+					Icon string `json:"icon"`
+				} `json:"node"`
+				Provider struct {
+					Icon string `json:"icon"`
+				} `json:"provider"`
+			}
+			_ = json.Unmarshal(plugin.manifest.Spec, &spec)
+
+			if spec.Node.Icon != "" {
+				iconStr = spec.Node.Icon
+			} else if spec.Provider.Icon != "" {
+				iconStr = spec.Provider.Icon
+			}
+		}
+
+		summaries = append(summaries, PluginList{
 			ID:          id,
+			Icon:        iconStr,
 			Manifest:    plugin.manifest,
 			SourcePath:  plugin.sourcePath,
 			Status:      plugin.status,
@@ -56,6 +78,11 @@ func (m *Manager) List() []PluginSummary {
 			IsEnabled:   plugin.status == "enabled",
 		})
 	}
+
+	sort.Slice(summaries, func(i, j int) bool {
+		return summaries[i].ID < summaries[j].ID
+	})
+
 	return summaries
 }
 

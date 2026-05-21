@@ -11,7 +11,7 @@
         type="info"
         :closable="false"
         show-icon
-        class="hub-notice"
+        class="mb-6"
       />
 
       <el-alert
@@ -20,7 +20,7 @@
         type="error"
         :closable="false"
         show-icon
-        class="hub-notice"
+        class="mb-6"
       />
 
       <div v-loading="loading" class="hub-content">
@@ -29,97 +29,126 @@
           description="No plugins available in the registry."
         />
 
-        <div v-else class="plugin-grid">
-          <section v-for="item in plugins" :key="item.id" class="plugin-card">
-            <header class="card-header">
-              <div class="plugin-icon">
-                <img v-if="kindIcon(item)" :src="kindIcon(item)" :alt="`${item.name} icon`" />
-                <el-icon v-else><Connection /></el-icon>
-              </div>
-              <div class="plugin-heading">
-                <div class="title-row">
-                  <h3>{{ item.name }}</h3>
-                  <el-tag size="small" effect="plain">{{ item.kind }}</el-tag>
+        <el-row v-else :gutter="24">
+          <el-col
+            v-for="item in plugins"
+            :key="item.id"
+            :xs="24" :sm="12" :md="12" :lg="8" :xl="6"
+            class="mb-6"
+          >
+            <el-card
+              shadow="never"
+              class="plugin-card"
+              :body-style="{ padding: '20px', display: 'flex', flexDirection: 'column', height: '100%' }"
+            >
+              <div class="card-inner flex-1 flex flex-column">
+                <!-- Header: Stable Layout -->
+                <div class="flex gap-4 mb-5">
+                  <el-avatar :size="48" :src="kindIcon(item)" shape="square" class="shrink-0 border-lighter">
+                    <el-icon><Connection /></el-icon>
+                  </el-avatar>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-start">
+                      <el-tooltip :content="item.name" placement="top" :disabled="item.name.length < 20">
+                        <el-text strong size="large" truncated class="mr-2">{{ item.name }}</el-text>
+                      </el-tooltip>
+                      <div class="flex items-center gap-2 shrink-0">
+                        <el-tag size="small" type="info" effect="plain" disable-transitions>{{ item.kind }}</el-tag>
+                        <el-button v-if="item.repo?.url" :icon="Link" link class="p-0 h-auto" @click="openExternal(item.repo.url)" />
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1 mt-1">
+                      <el-text size="small" type="secondary">v{{ item.version || '0.0.0' }}</el-text>
+                      <el-divider v-if="item.repo?.author" direction="vertical" class="mx-1" />
+                      <el-text v-if="item.repo?.author" size="small" type="secondary" truncated>{{ item.repo.author }}</el-text>
+                    </div>
+                  </div>
                 </div>
-                <div class="meta-row">
-                  <span>v{{ item.version || '0.0.0' }}</span>
-                  <span v-if="item.repo?.author">By {{ item.repo.author }}</span>
+
+                <!-- Description Area -->
+                <div class="flex-1">
+                  <el-text
+                    class="mb-4 description-text"
+                    :line-clamp="2"
+                    :type="item.description ? '' : 'placeholder'"
+                  >
+                    {{ item.description || 'No description provided for this plugin.' }}
+                  </el-text>
+
+                  <!-- Meta/Actions -->
+                  <div class="mb-6">
+                    <div v-if="kindActions(item).length" class="flex flex-column gap-1">
+                      <div v-for="action in kindActions(item)" :key="action.type">
+                        <el-text size="small" truncated class="block">
+                          <b class="mr-1">{{ action.type }}</b>
+                          <span class="opacity-70">{{ action.description }}</span>
+                        </el-text>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Footer Status & Progress -->
+                <div class="pt-4 border-t border-lighter mt-auto">
+                  <div v-if="!hasCompatibleArtifact(item)" class="mb-3">
+                    <el-text type="warning" size="small" class="flex items-center gap-1">
+                      <el-icon><Warning /></el-icon>
+                      Incompatible device
+                    </el-text>
+                  </div>
+
+                  <div v-if="shouldShowStatus(item)" class="flex items-center justify-between mb-2">
+                    <el-text size="small" type="secondary" class="uppercase tracking-wider font-bold">Status</el-text>
+                    <el-tag :type="statusTag(item)" effect="dark" size="small" disable-transitions>
+                      {{ statusLabel(item) }}
+                    </el-tag>
+                  </div>
+
+                  <div v-if="installTasks[item.id]" class="mt-3">
+                    <el-progress
+                      :percentage="progressPercent(installTasks[item.id])"
+                      :status="progressStatus(installTasks[item.id])"
+                      :stroke-width="4"
+                      :show-text="false"
+                    />
+                    <el-text v-if="installTasks[item.id]?.error" type="danger" size="small" class="mt-1 block">
+                      {{ installTasks[item.id].error }}
+                    </el-text>
+                  </div>
+
+                  <div class="mt-4">
+                    <el-button
+                      v-if="isInstalling(item.id)"
+                      type="warning"
+                      class="w-full"
+                      @click="stopInstall(item.id)"
+                    >
+                      Stop
+                    </el-button>
+                    <el-button
+                      v-else-if="item.is_installed"
+                      type="danger"
+                      plain
+                      class="w-full"
+                      @click="uninstallPlugin(item.id)"
+                    >
+                      Uninstall
+                    </el-button>
+                    <el-button
+                      v-else
+                      type="primary"
+                      class="w-full"
+                      :disabled="!hasCompatibleArtifact(item)"
+                      @click="installPlugin(item.id)"
+                    >
+                      Install
+                    </el-button>
+                  </div>
                 </div>
               </div>
-            </header>
-
-            <p class="description">{{ item.description || 'No description' }}</p>
-
-            <div v-if="!hasCompatibleArtifact(item) || shouldShowStatus(item)" class="info-strip">
-              <div v-if="!hasCompatibleArtifact(item)">
-                <span class="info-label">Compatibility</span>
-                <el-tag type="warning" effect="plain">Not available for this device</el-tag>
-              </div>
-              <div v-if="shouldShowStatus(item)">
-                <span class="info-label">Status</span>
-                <el-tag :type="statusTag(item)" effect="plain">{{ statusLabel(item) }}</el-tag>
-              </div>
-            </div>
-
-            <div v-if="kindTags(item).length || kindActions(item).length" class="kind-meta">
-              <div v-if="kindTags(item).length" class="kind-tags">
-                <el-tag v-for="tag in kindTags(item)" :key="tag" size="small" effect="plain">
-                  {{ tag }}
-                </el-tag>
-              </div>
-              <div v-if="kindActions(item).length" class="kind-actions">
-                <span v-for="action in kindActions(item)" :key="action.key" class="kind-action">
-                  <strong>{{ action.key }}</strong>
-                  <span>{{ action.description }}</span>
-                </span>
-              </div>
-            </div>
-
-            <div v-if="installTasks[item.id]" class="progress-block">
-              <el-progress
-                :percentage="progressPercent(installTasks[item.id])"
-                :status="progressStatus(installTasks[item.id])"
-                :stroke-width="8"
-              />
-              <span v-if="installTasks[item.id]?.error" class="install-error">
-                {{ installTasks[item.id].error }}
-              </span>
-            </div>
-
-            <footer class="card-actions">
-              <el-button
-                v-if="isInstalling(item.id)"
-                type="warning"
-                plain
-                @click="stopInstall(item.id)"
-              >
-                Stop
-              </el-button>
-              <el-button
-                v-else-if="item.is_installed"
-                type="danger"
-                plain
-                @click="uninstallPlugin(item.id)"
-              >
-                Uninstall
-              </el-button>
-              <el-button
-                v-else
-                type="primary"
-                :disabled="!hasCompatibleArtifact(item)"
-                @click="installPlugin(item.id)"
-              >
-                Install
-              </el-button>
-              <el-button
-                v-if="item.repo?.url"
-                :icon="Link"
-                circle
-                @click="openExternal(item.repo.url)"
-              />
-            </footer>
-          </section>
-        </div>
+            </el-card>
+          </el-col>
+        </el-row>
       </div>
     </div>
   </AppPage>
@@ -127,7 +156,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { Connection, Link } from '@element-plus/icons-vue'
+import { Connection, Link, Warning } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { pluginsApi as api } from '@plugins/api'
 import type { InstallTask, RegistryPluginSummary, RegistryResponse } from '@plugins/api'
@@ -279,11 +308,6 @@ function shouldShowStatus(row: RegistryPluginSummary) {
   return Boolean(installTasks.value[row.id] || row.is_installed)
 }
 
-function kindTags(row: RegistryPluginSummary) {
-  const tags = row.kind_meta?.tags
-  return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === 'string') : []
-}
-
 function kindIcon(row: RegistryPluginSummary) {
   const icon = row.kind_meta?.icon
   return typeof icon === 'string' && icon.trim() ? icon : ''
@@ -293,11 +317,11 @@ function kindActions(row: RegistryPluginSummary) {
   const actions = row.kind_meta?.actions
   if (!Array.isArray(actions)) return []
   return actions
-    .filter((action): action is { key: string; description?: string } => {
-      return typeof action === 'object' && action !== null && typeof (action as any).key === 'string'
+    .filter((action): action is { type: string; description?: string } => {
+      return typeof action === 'object' && action !== null && typeof (action as any).type === 'string'
     })
     .map(action => ({
-      key: action.key,
+      type: action.type,
       description: typeof action.description === 'string' ? action.description : '',
     }))
 }
@@ -319,177 +343,73 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.hub-container {
-  padding: 4px 0 24px;
-}
-
-.hub-notice {
-  margin-bottom: 16px;
-}
+ 
 
 .hub-content {
-  min-height: 260px;
-}
-
-.plugin-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  min-height: 300px;
 }
 
 .plugin-card {
+  height: 100%;
+}
+
+.card-inner {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  min-height: 280px;
-  padding: 16px;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  background: var(--el-bg-color);
 }
 
-.card-header {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-}
-
-.plugin-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 40px;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  color: var(--el-color-primary);
-  background: var(--el-fill-color-lighter);
-}
-
-.plugin-icon img {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-}
-
-.plugin-heading {
-  min-width: 0;
-  flex: 1;
-}
-
-.title-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.title-row h3 {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.3;
-  color: var(--el-text-color-primary);
-}
-
-.meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-
-.description {
+.description-text {
   display: -webkit-box;
-  min-height: 62px;
-  margin: 14px 0;
-  overflow: hidden;
-  color: var(--el-text-color-regular);
-  line-height: 1.45;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
-}
-
-.info-strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-  margin-top: auto;
-  padding: 10px;
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  background: var(--el-fill-color-lighter);
-}
-
-.info-strip > div {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.info-label {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-
-.info-strip strong {
   overflow: hidden;
-  color: var(--el-text-color-primary);
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.5;
+  height: 3em;
 }
 
-.kind-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 12px;
+.border-lighter {
+  border-color: var(--el-border-color-lighter);
 }
 
-.kind-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.kind-actions {
-  display: grid;
-  gap: 6px;
-}
-
-.kind-action {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-}
-
-.kind-action strong {
-  color: var(--el-text-color-primary);
-}
-
-.progress-block {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.install-error {
-  color: var(--el-color-danger);
-  font-size: 12px;
-  line-height: 1.3;
-}
-
-.card-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 14px;
-}
+/* Utility classes to avoid heavy CSS */
+.w-full { width: 100%; }
+.flex { display: flex; }
+.flex-column { flex-direction: column; }
+.flex-1 { flex: 1; }
+.flex-wrap { flex-wrap: wrap; }
+.shrink-0 { flex-shrink: 0; }
+.items-center { align-items: center; }
+.items-start { align-items: flex-start; }
+.justify-between { justify-content: space-between; }
+.min-w-0 { min-width: 0; }
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+.gap-4 { gap: 16px; }
+.mb-1 { margin-bottom: 4px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-5 { margin-bottom: 20px; }
+.mb-6 { margin-bottom: 24px; }
+.mr-1 { margin-right: 4px; }
+.mr-2 { margin-right: 8px; }
+.mx-1 { margin-left: 4px; margin-right: 4px; }
+.mt-1 { margin-top: 4px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mt-auto { margin-top: auto; }
+.pt-4 { padding-top: 16px; }
+.p-0 { padding: 0; }
+.h-auto { height: auto; }
+.block { display: block; }
+.border-t { border-top-width: 1px; border-top-style: solid; }
+.uppercase { text-transform: uppercase; }
+.tracking-wider { letter-spacing: 0.05em; }
+.font-bold { font-weight: bold; }
+.opacity-70 { opacity: 0.7; }
 </style>
+
+
+

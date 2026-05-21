@@ -34,7 +34,7 @@ func NewPluginService(appVersion, pluginDir string) (*PluginService, error) {
 	}, nil
 }
 
-func (s *PluginService) List() []PluginSummary {
+func (s *PluginService) List() []PluginList {
 	return s.manager.List()
 }
 
