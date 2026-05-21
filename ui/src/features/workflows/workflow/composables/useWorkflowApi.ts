@@ -31,10 +31,8 @@ export function useWorkflowApi(
 
       flowNodes.value = mapNodesToFlow(data.nodes || [], positions)
       
-      const dbEdges = data.edges || []
-      const edgesToLoad: WorkflowEdge[] = (draft.edges && draft.edges.length > 0) ? draft.edges : dbEdges
-      
-      const validEdges = edgesToLoad.filter((e) => {
+      const dbEdges: WorkflowEdge[] = data.edges || []
+      const validEdges = dbEdges.filter((e) => {
         const hasSource = flowNodes.value.some(n => n.id === e.source)
         const hasTarget = flowNodes.value.some(n => n.id === e.target)
         return hasSource && hasTarget

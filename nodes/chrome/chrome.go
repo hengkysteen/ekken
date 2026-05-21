@@ -12,7 +12,7 @@ import (
 )
 
 type GoogleChromeNode struct {
-	Action node.NodeAction
+	Action node.Action
 	Output any
 }
 
@@ -45,8 +45,8 @@ func init() {
 
 	// 2. Register node to global registry
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "google_chrome",
 				Tags:        []string{"Browser"},
 				Label:       "Google Chrome",
@@ -55,17 +55,17 @@ func init() {
 			},
 
 			DefaultAction: "launch",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:         "launch",
+					Type:        "launch",
 					Label:       "Launch",
 					Description: "Launch Google Chrome with debugging port",
 					Fields: []node.NodeField{
 						{Key: "bin_path", Type: "string", Default: getChromePath(), Label: "Google Chrome Path"},
 						{Key: "profile", Type: "string", Default: "mybot", Label: "Profile"},
 						{Key: "port", Type: "number", Default: 9222, Label: "Port"},
-						{Key: "width", Type: "number", Default: 1920, Label: "Window Width"},
-						{Key: "height", Type: "number", Default: 1080, Label: "Window Height"},
+						{Key: "window_width", Type: "number", Default: 1920, Label: "Window Width"},
+						{Key: "window_height", Type: "number", Default: 1080, Label: "Window Height"},
 						{Key: "headless", Type: "boolean", Default: false, Label: "Headless"},
 					},
 					AutoLayout: [][]node.AutoLayout{
@@ -77,8 +77,8 @@ func init() {
 							{Key: "port", Component: "number", Flex: 12},
 						},
 						{
-							{Key: "width", Component: "number", Flex: 12},
-							{Key: "height", Component: "number", Flex: 12},
+							{Key: "window_width", Component: "number", Flex: 12},
+							{Key: "window_height", Component: "number", Flex: 12},
 						},
 						{
 							{Key: "headless", Component: "switch", Options: map[string]any{"helper": "Run Chrome without a GUI window"}},
@@ -86,7 +86,7 @@ func init() {
 					},
 				},
 				{
-					Key:         "terminate",
+					Type:        "terminate",
 					Label:       "Terminate",
 					Description: "Terminate Google Chrome instance",
 					Fields: []node.NodeField{
@@ -104,14 +104,14 @@ func init() {
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &GoogleChromeNode{Action: action}
 		},
 	})
 }
 
 func (n *GoogleChromeNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-	action := strings.ToLower(n.Action.Key)
+	action := strings.ToLower(n.Action.Type)
 	portF, _ := node.FieldValue(n.Action, "port").(float64)
 	port := int(portF)
 	if port == 0 {

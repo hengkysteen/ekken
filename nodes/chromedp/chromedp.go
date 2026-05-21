@@ -20,29 +20,29 @@ type Session struct {
 }
 
 type BrowserNode struct {
-	Action       node.NodeAction
+	Action       node.Action
 	Output       interface{}
 	AllocatorCtx context.Context
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "chromedp",
 				Tags:        []string{"Web Automation"},
 				Label:       "Chromedp",
 				Icon:        "https://www.svgrepo.com/show/522006/browser.svg",
 				Description: "Navigate, click, screenshot from a Chrome tab.",
-				DependsOn: []node.NodeDependency{
+				DependsOn: []node.DependsOn{
 					{Node: "google_chrome", Action: "launch"},
 				},
 			},
 
 			DefaultAction: "navigate",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:         "navigate",
+					Type:        "navigate",
 					Label:       "Navigate",
 					Description: "Navigate to a URL",
 					Fields: []node.NodeField{
@@ -55,7 +55,7 @@ func init() {
 					},
 				},
 				{
-					Key:         "click",
+					Type:        "click",
 					Label:       "Click",
 					Description: "Click an element by selector",
 					Fields: []node.NodeField{
@@ -73,7 +73,7 @@ func init() {
 					},
 				},
 				{
-					Key:         "screenshot",
+					Type:        "screenshot",
 					Label:       "Screenshot",
 					Description: "Take a screenshot of the page",
 					Fields: []node.NodeField{
@@ -88,7 +88,7 @@ func init() {
 					},
 				},
 				{
-					Key:         "input",
+					Type:        "input",
 					Label:       "Input",
 					Description: "Type into an input field",
 					Fields: []node.NodeField{
@@ -121,7 +121,7 @@ func init() {
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &BrowserNode{Action: action}
 		},
 	})
@@ -133,7 +133,7 @@ func (n *BrowserNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, 
 		return node.NodeExecutionResult{}, err
 	}
 
-	action := n.Action.Key
+	action := n.Action.Type
 	if action == "" {
 		return node.NodeExecutionResult{}, fmt.Errorf("action is required")
 	}

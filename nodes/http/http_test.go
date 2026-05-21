@@ -32,7 +32,7 @@ func TestHTTPV2CurlExecutesRequest(t *testing.T) {
 	defer server.Close()
 
 	n := &HTTPNode{Action: node.ActionFromMap(map[string]any{
-		"action": "curl",
+		"type": "curl",
 		"curl":   "curl -X POST " + server.URL + " -H 'Authorization: Bearer {{token}}' -H 'Content-Type: application/json' -d '{\"name\":\"{{name}}\"}'",
 	})}
 
@@ -72,7 +72,7 @@ func TestHTTPV2ParsesJSONBodyWithoutJSONContentType(t *testing.T) {
 	defer server.Close()
 
 	n := &HTTPNode{Action: node.ActionFromMap(map[string]any{
-		"action": "curl",
+		"type": "curl",
 		"curl":   "curl " + server.URL,
 	})}
 
@@ -113,7 +113,7 @@ func TestHTTPV2KeepsEventStreamBodyRaw(t *testing.T) {
 	defer server.Close()
 
 	n := &HTTPNode{Action: node.ActionFromMap(map[string]any{
-		"action": "curl",
+		"type": "curl",
 		"curl":   "curl " + server.URL,
 	})}
 
@@ -150,7 +150,7 @@ func TestHTTPV2DefaultsRequestBodyContentTypeToJSON(t *testing.T) {
 	defer server.Close()
 
 	n := &HTTPNode{Action: node.ActionFromMap(map[string]any{
-		"action": "curl",
+		"type": "curl",
 		"curl":   `curl -d '{"name":"Ekken"}' ` + server.URL,
 	})}
 
@@ -275,8 +275,8 @@ func TestHTTPV2SpecHasGlobalFieldsAndResponseVar(t *testing.T) {
 		t.Fatalf("actions len = %d, want 1", len(spec.Actions))
 	}
 	action := spec.Actions[0]
-	if action.Key != "curl" {
-		t.Fatalf("action key = %q, want curl", action.Key)
+	if action.Type != "curl" {
+		t.Fatalf("action type = %q, want curl", action.Type)
 	}
 	if action.ResponseVar == "" {
 		t.Fatal("response var is empty")

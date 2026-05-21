@@ -6,8 +6,16 @@
     <el-form v-else label-position="top" @submit.prevent>
 
 
-      <el-form-item v-if="nodeDef?.actions?.length" label="Action" :for="`action-${node?.id}`">
-        <el-segmented :id="`action-${node?.id}`" v-model="currentActionKey" :options="actionOptions" />
+      <el-form-item v-if="nodeDef?.actions?.length" :for="`action-${node?.id}`">
+        <template #label>
+          <div class="flex items-center gap-2">
+            <span>Action</span>
+            <el-text v-if="currentActionDescription" type="info" size="small">
+              ({{ currentActionDescription }})
+            </el-text>
+          </div>
+        </template>
+        <el-segmented :id="`action-${node?.id}`" v-model="currentActionType" :options="actionOptions" />
       </el-form-item>
 
       <template v-if="localAction">
@@ -41,7 +49,7 @@ import type { NodeFormProps, NodeDefinition } from '@workflows/node/types/node'
 const props = defineProps<NodeFormProps>()
 const nodeStore = useNodeStore()
 
-const currentActionKey = ref('')
+const currentActionType = ref('')
 const localAction = ref<any>(null)
 const localGlobalFields = ref<any[]>([])
 
@@ -49,7 +57,7 @@ const catalog = computed(() => nodeStore.catalog)
 const actionOptions = computed(() => {
   return nodeDef.value?.actions?.map(action => ({
     label: action.label,
-    value: action.key
+    value: action.type
   })) || []
 })
 
@@ -58,14 +66,15 @@ const nodeDef = computed(() => {
   return catalog.value?.find((n: NodeDefinition) => n.type === type)
 })
 
-const actionBlueprint = computed(() => getActionBlueprint(nodeDef.value, currentActionKey.value))
-const hydratedAction = computed(() => hydrateActionForForm(localAction.value, nodeDef.value, currentActionKey.value))
+const actionBlueprint = computed(() => getActionBlueprint(nodeDef.value, currentActionType.value))
+const currentActionDescription = computed(() => actionBlueprint.value?.description || '')
+const hydratedAction = computed(() => hydrateActionForForm(localAction.value, nodeDef.value, currentActionType.value))
 
 // Handle action switching
-watch(currentActionKey, (newKey) => {
-  if (newKey && localAction.value && localAction.value.key !== newKey) {
+watch(currentActionType, (newType) => {
+  if (newType && localAction.value && localAction.value.type !== newType) {
     const oldFields = localAction.value.fields || []
-    const newAction = buildActionInstance(nodeDef.value, newKey)
+    const newAction = buildActionInstance(nodeDef.value, newType)
 
     // Preserve values for fields with same keys
     newAction.fields = newAction.fields.map((f: any) => {
@@ -81,7 +90,7 @@ onMounted(() => {
   // Load existing action or build default
   if (props.node?.data?.action) {
     const savedAction = serializeActionForSave(props.node.data.action)
-    currentActionKey.value = savedAction.key || nodeDef.value?.default_action || nodeDef.value?.actions?.[0]?.key || ''
+    currentActionType.value = savedAction.type || nodeDef.value?.default_action || nodeDef.value?.actions?.[0]?.type || ''
 
     // Split fields: separate global fields from action fields
     const globalKeys = new Set(nodeDef.value?.global_fields?.map((f: any) => f.key) || [])
@@ -100,7 +109,7 @@ onMounted(() => {
     localGlobalFields.value = hydrateFieldsForForm(nodeDef.value?.global_fields, globalFields)
   } else if (nodeDef.value) {
     localAction.value = buildActionInstance(nodeDef.value)
-    currentActionKey.value = localAction.value.key
+    currentActionType.value = localAction.value.type
     localGlobalFields.value = hydrateFieldsForForm(nodeDef.value.global_fields)
   }
 })

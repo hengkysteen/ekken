@@ -293,7 +293,7 @@ func TestJsonNode_ExtractStream(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			n := &JsonNode{Action: node.ActionFromMap(map[string]any{
-				"action": "extract_stream",
+				"type": "extract_stream",
 				"input":  "{{my_input}}",
 				"path":   tt.path,
 			})}

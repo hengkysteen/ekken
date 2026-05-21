@@ -124,7 +124,7 @@ export function useWorkflowActions(
       if (label) flowNode.data.label = label
 
       const def = nodeStore.findDef(flowNode.data.nodeType)
-      flowNode.data.action_has_response = def?.actions?.find(a => a.key === flowNode.data.action?.key)?.has_response ?? false
+      flowNode.data.action_has_response = def?.actions?.find(a => a.type === flowNode.data.action?.type)?.has_response ?? false
       flowNode.data.outputs = calculateNodeOutputs(flowNode.data.nodeType, flowNode.data.action, def)
     }
 
@@ -153,9 +153,9 @@ export function useWorkflowActions(
     
     // Deep clone the action and generate new response_var
     const newAction = serializeActionForSave(JSON.parse(JSON.stringify(sourceNode.data.action || {})))
-    const actionHasResponse = def?.actions?.find(a => a.key === newAction.key)?.has_response ?? false
+    const actionHasResponse = def?.actions?.find(a => a.type === newAction.type)?.has_response ?? false
     if (actionHasResponse) {
-      newAction.response_var = `${sourceNode.data.nodeType}.${newAction.key}_${generateNodeId()}`
+      newAction.response_var = `${sourceNode.data.nodeType}.${newAction.type}_${generateNodeId()}`
     }
 
     const rawNode: WorkflowNode = {

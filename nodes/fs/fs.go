@@ -9,13 +9,13 @@ import (
 )
 
 type FSNode struct {
-	Action node.NodeAction
+	Action node.Action
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "fs",
 				Label:       "File System",
 				Tags:        []string{"System"},
@@ -24,12 +24,12 @@ func init() {
 			},
 
 			DefaultAction: "write",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:         "write",
-					Label:       "Write",
-					Description: "Write content to a file.",
-					HasResponse: true,
+					Type:         "write",
+					Label:        "Write",
+					Description:  "Write content to a file.",
+					HasResponse:  true,
 					ResponseType: &node.NodeResponseType{Mime: "text/plain", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{
@@ -60,10 +60,10 @@ func init() {
 					},
 				},
 				{
-					Key:         "append",
-					Label:       "Append",
-					Description: "Append content to the end of a file.",
-					HasResponse: true,
+					Type:         "append",
+					Label:        "Append",
+					Description:  "Append content to the end of a file.",
+					HasResponse:  true,
 					ResponseType: &node.NodeResponseType{Mime: "text/plain", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{
@@ -94,10 +94,10 @@ func init() {
 					},
 				},
 				{
-					Key:         "delete",
-					Label:       "Delete",
-					Description: "Delete a file or directory.",
-					HasResponse: true,
+					Type:         "delete",
+					Label:        "Delete",
+					Description:  "Delete a file or directory.",
+					HasResponse:  true,
 					ResponseType: &node.NodeResponseType{Mime: "text/plain", Charset: "utf-8"},
 					Fields: []node.NodeField{
 						{
@@ -128,7 +128,7 @@ func init() {
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &FSNode{Action: action}
 		},
 	})
@@ -141,7 +141,7 @@ func (n *FSNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error
 	default:
 	}
 
-	switch n.Action.Key {
+	switch n.Action.Type {
 	case "append":
 		return n.executeAppend(ctx)
 	case "delete":

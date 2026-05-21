@@ -9,13 +9,13 @@ import (
 )
 
 type IfElseNode struct {
-	Action node.NodeAction
+	Action node.Action
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "ifelse",
 				Tags:        []string{"Conditions"},
 				Label:       "If Else",
@@ -24,9 +24,9 @@ func init() {
 			},
 
 			DefaultAction: "if_else",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:   "if_else",
+					Type:  "if_else",
 					Label: "IF Else",
 					Fields: []node.NodeField{
 						{Key: "operand_1", Type: "string", Label: "Operand 1"},
@@ -59,7 +59,7 @@ func init() {
 				{Key: "false", Label: "False", Tone: "warning"},
 			},
 		},
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &IfElseNode{Action: action}
 		},
 	})

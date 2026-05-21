@@ -4,7 +4,7 @@
  */
 
 import type { NodeDefinition, NodeField, NodeFieldType } from '@workflows/node/types/node'
-import { getActionBlueprint, getActionValue } from './node'
+import { getActionBlueprint, getActionType, getActionValue } from './node'
 
 /**
  * Result of a validation operation
@@ -48,10 +48,11 @@ export function validateNodeConfig(
   schema: NodeDefinition
 ): ValidationResult {
   const errors: string[] = []
-  const actionBlueprint = getActionBlueprint(schema, action?.key)
+  const actionType = getActionType(action)
+  const actionBlueprint = getActionBlueprint(schema, actionType)
 
   if (!actionBlueprint) {
-    errors.push(`Invalid action: ${action?.key || '(empty)'}`)
+    errors.push(`Invalid action: ${actionType || '(empty)'}`)
     return { valid: false, errors }
   }
 

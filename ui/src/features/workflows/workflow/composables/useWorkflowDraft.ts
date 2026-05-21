@@ -2,7 +2,6 @@ import { type Ref } from 'vue'
 import { watchDebounced } from '@vueuse/core'
 import { type XYPosition } from '@vue-flow/core'
 import { Storage, StorageKeys } from '@shared/utils/storage'
-import type { WorkflowEdge } from '@workflows/workflow/api'
 
 export interface Viewport {
   x: number
@@ -12,7 +11,6 @@ export interface Viewport {
 
 export interface CanvasDraft {
   positions?: Record<string, XYPosition>
-  edges?: WorkflowEdge[]
   viewport?: Viewport
 }
 
@@ -39,19 +37,12 @@ export function useWorkflowDraft(
       }
     }
 
-    const edges: WorkflowEdge[] = flowEdges.value.map(e => ({
-      source: e.source,
-      sourceHandle: (e.sourceHandle as string) || 'success',
-      target: e.target
-    }))
-
     const key = StorageKeys.CANVAS_DRAFT(workflowId.value)
     const existing = Storage.get<CanvasDraft>(key) || {}
     
     Storage.set(key, {
       ...existing,
       positions,
-      edges,
       viewport: savedViewport.value
     })
   }

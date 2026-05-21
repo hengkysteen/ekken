@@ -211,7 +211,7 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 
 	spec, hasSpec := e.registry.GetSpec(nodeType)
 
-	var allDeps []node.NodeDependency
+	var allDeps []node.DependsOn
 	if hasSpec && len(spec.DependsOn) > 0 {
 		allDeps = append(allDeps, spec.DependsOn...)
 	}
@@ -232,7 +232,7 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 	if label == "" {
 		label = nodeType
 	}
-	action := nodeDef.Action.Key
+	action := nodeDef.Action.Type
 	display := label
 	if action != "" {
 		display = fmt.Sprintf("%s (%s)", label, action)
@@ -273,12 +273,12 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 				handle = "success"
 			}
 
-			node.GlobalTracker.RecordExecuted(wfID, nodeDef.Type, nodeDef.Action.Key)
+			node.GlobalTracker.RecordExecuted(wfID, nodeDef.Type, nodeDef.Action.Type)
 			// Status remains 'running' globally
 
-			hasResponse := e.checkActionHasResponse(nodeDef.Type, nodeDef.Action.Key)
+			hasResponse := e.checkActionHasResponse(nodeDef.Type, nodeDef.Action.Type)
 			if hasResponse && result.Response != nil && result.Type == nil {
-				return "", nil, fmt.Errorf("node '%s' action '%s': kontrak memiliki response, dan node memberikan response, tetapi response type (Mime/Charset) tidak diatur", nodeDef.Type, nodeDef.Action.Key)
+				return "", nil, fmt.Errorf("node '%s' action '%s': kontrak memiliki response, dan node memberikan response, tetapi response type (Mime/Charset) tidak diatur", nodeDef.Type, nodeDef.Action.Type)
 			}
 
 			e.logInfo(wfID, "[Node] Output handle: %s", handle)
@@ -297,7 +297,6 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 
 	return "", nil, nil
 }
-
 
 func getOnErrorAction(nodeDef *node.Node) string {
 	if nodeDef.OnError != "" {
@@ -329,7 +328,7 @@ func (e *Runner) saveNodeOutput(wfID string, nodeDef *node.Node, ctx *node.NodeC
 	if label == "" {
 		label = nodeDef.Type
 	}
-	action := nodeDef.Action.Key
+	action := nodeDef.Action.Type
 	display := label
 	if action != "" {
 		display = fmt.Sprintf("%s (%s)", label, action)
@@ -348,7 +347,7 @@ func checkContextDone(ctx context.Context) error {
 	}
 }
 
-func (e *Runner) getActionKeyFromSpec(nodeType string) string {
+func (e *Runner) getActionTypeFromSpec(nodeType string) string {
 	spec, ok := e.registry.GetSpec(nodeType)
 	if !ok {
 		return ""
@@ -357,18 +356,18 @@ func (e *Runner) getActionKeyFromSpec(nodeType string) string {
 		return spec.DefaultAction
 	}
 	if len(spec.Actions) > 0 {
-		return spec.Actions[0].Key
+		return spec.Actions[0].Type
 	}
 	return ""
 }
 
-func (e *Runner) checkActionHasResponse(nodeType, actionKey string) bool {
+func (e *Runner) checkActionHasResponse(nodeType, actionType string) bool {
 	spec, ok := e.registry.GetSpec(nodeType)
 	if !ok {
 		return false
 	}
 	for _, action := range spec.Actions {
-		if action.Key == actionKey {
+		if action.Type == actionType {
 			return action.HasResponse
 		}
 	}
@@ -382,7 +381,7 @@ func (e *Runner) getNodeLabel(wf Workflow, id string) string {
 			if label == "" {
 				label = n.Type
 			}
-			action := n.Action.Key
+			action := n.Action.Type
 			if action != "" {
 				return fmt.Sprintf("%s (%s)", label, action)
 			}

@@ -14,10 +14,14 @@ export function generateNodeId(): string {
 
 
 
-export function getActionBlueprint(def?: NodeDefinition, actionKey?: string): NodeAction | undefined {
+export function getActionType(action?: any): string {
+  return action?.type || ''
+}
+
+export function getActionBlueprint(def?: NodeDefinition, actionType?: string): NodeAction | undefined {
   if (!def) return undefined
-  const selectedActionKey = actionKey || def.default_action || def.actions?.[0]?.key
-  return def.actions?.find(a => a.key === selectedActionKey) || def.actions?.[0]
+  const selectedActionType = actionType || def.default_action || def.actions?.[0]?.type
+  return def.actions?.find(a => a.type === selectedActionType) || def.actions?.[0]
 }
 
 export function fieldsToValueMap(fields?: Array<Partial<NodeField>>): Record<string, any> {
@@ -49,23 +53,24 @@ export function hydrateFieldsForForm(
   }))
 }
 
-export function hydrateActionForForm(action: any, def?: NodeDefinition, actionKey?: string): any {
-  const blueprint = getActionBlueprint(def, actionKey || action?.key)
-  if (!blueprint) return action || { key: actionKey || '', fields: [] }
+export function hydrateActionForForm(action: any, def?: NodeDefinition, actionType?: string): any {
+  const selectedActionType = actionType || getActionType(action)
+  const blueprint = getActionBlueprint(def, selectedActionType)
+  if (!blueprint) return action || { type: selectedActionType || '', fields: [] }
 
   return {
     ...blueprint,
-    key: blueprint.key,
+    type: blueprint.type,
     response_var: action?.response_var || blueprint.response_var,
     fields: hydrateFieldsForForm(blueprint.fields, action?.fields)
   }
 }
 
 export function serializeActionForSave(action: any): any {
-  if (!action) return { key: '', fields: [] }
+  if (!action) return { type: '', fields: [] }
 
   const result: any = {
-    key: action.key || '',
+    type: getActionType(action),
     fields: (action.fields || [])
       .filter((field: any) => field?.key)
       .map((field: any) => ({ key: field.key, value: field.value }))
@@ -79,18 +84,18 @@ export function serializeActionForSave(action: any): any {
 }
 
 /**
- * Builds a minimal NodeAction instance based on a node definition and selected action key.
+ * Builds a minimal NodeAction instance based on a node definition and selected action type.
  */
-export function buildActionInstance(def?: NodeDefinition, actionKey?: string): any {
-  if (!def) return { key: '', fields: [] }
+export function buildActionInstance(def?: NodeDefinition, actionType?: string): any {
+  if (!def) return { type: '', fields: [] }
 
-  const actionDef = getActionBlueprint(def, actionKey)
-  const selectedActionKey = actionDef?.key || actionKey || def.default_action || ''
+  const actionDef = getActionBlueprint(def, actionType)
+  const selectedActionType = actionDef?.type || actionType || def.default_action || ''
 
-  if (!actionDef) return { key: selectedActionKey, fields: [] }
+  if (!actionDef) return { type: selectedActionType, fields: [] }
 
   const action: any = {
-    key: selectedActionKey,
+    type: selectedActionType,
     fields: (actionDef.fields || []).map(f => ({
       key: f.key,
       value: f.default !== undefined ? f.default : undefined
@@ -98,7 +103,7 @@ export function buildActionInstance(def?: NodeDefinition, actionKey?: string): a
   }
 
   if (actionDef.has_response) {
-    action.response_var = `${def.type}.${selectedActionKey}_${generateNodeId()}`
+    action.response_var = `${def.type}.${selectedActionType}_${generateNodeId()}`
   }
 
   return action
@@ -121,7 +126,7 @@ export function buildNodeData(
   }
 
   const outputs = calculateNodeOutputs(node.type!, action, def)
-  const actionBlueprint = getActionBlueprint(def, action?.key)
+  const actionBlueprint = getActionBlueprint(def, getActionType(action))
 
   return {
     label: node._label || node.label || def?.label || node.type,

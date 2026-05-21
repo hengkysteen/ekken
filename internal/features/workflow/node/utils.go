@@ -22,7 +22,7 @@ func ParseTemplate(template string, variables map[string]interface{}) string {
 	for k, v := range variables {
 		// Create regex that allows optional spaces: {{\s*key\s*}}
 		re := regexp.MustCompile(fmt.Sprintf(`\{\{\s*%s\s*\}\}`, regexp.QuoteMeta(k)))
-		
+
 		// Convert value to string - use JSON for complex types
 		var strVal string
 		switch val := v.(type) {
@@ -40,7 +40,7 @@ func ParseTemplate(template string, variables map[string]interface{}) string {
 				strVal = fmt.Sprintf("%v", val)
 			}
 		}
-		
+
 		template = re.ReplaceAllString(template, strVal)
 	}
 
@@ -74,7 +74,6 @@ func ParseTemplate(template string, variables map[string]interface{}) string {
 			return val
 		})
 	}
-
 
 	return template
 }
@@ -169,9 +168,9 @@ func toNumber(val interface{}) (float64, error) {
 	}
 }
 
-// FieldValue returns the Value of a field by key from a NodeAction.
+// FieldValue returns the Value of a field by key from an Action.
 // Falls back to Default if Value is nil.
-func FieldValue(action NodeAction, key string) any {
+func FieldValue(action Action, key string) any {
 	for _, f := range action.Fields {
 		if f.Key == key {
 			if f.Value != nil {
@@ -183,21 +182,24 @@ func FieldValue(action NodeAction, key string) any {
 	return nil
 }
 
-// ActionFromMap creates a NodeAction with fields populated from a map (for testing).
-func ActionFromMap(m map[string]any) NodeAction {
-	action := NodeAction{}
-	
-	// Extract action key if present
-	if actionKey, ok := m["action"].(string); ok {
-		action.Key = actionKey
+// ActionFromMap creates an Action with fields populated from a map (for testing).
+func ActionFromMap(m map[string]any) Action {
+	action := Action{}
+
+	// Extract action type if present
+	if actionType, ok := m["type"].(string); ok {
+		action.Type = actionType
 	}
-	
+
 	// Convert map to fields
 	fields := make([]NodeField, 0, len(m))
 	for k, v := range m {
+		if k == "type" {
+			continue
+		}
 		fields = append(fields, NodeField{Key: k, Value: v})
 	}
 	action.Fields = fields
-	
+
 	return action
 }

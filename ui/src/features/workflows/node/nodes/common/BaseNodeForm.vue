@@ -16,8 +16,8 @@
         <component :is="specificComponent" v-if="node" ref="nodeCompRef" :node="node" />
       </div>
 
-      <template v-if="nodeTypeDisplay !== 'timer' && currentActionHasOutput">
-        <el-divider />
+      <template v-if="currentActionHasOutput">
+        <div style="height: 16px" />
         <el-form label-position="top">
           <el-form-item label="Result name">
             <el-input v-model="responseVar" placeholder="e.g. my_data" />
@@ -27,6 +27,7 @@
           </el-form-item>
         </el-form>
       </template>
+
     </div>
 
     <template #footer>
@@ -40,6 +41,7 @@
         </el-button>
       </div>
     </template>
+
   </el-dialog>
 </template>
 
@@ -49,7 +51,7 @@ import { ElMessage } from 'element-plus'
 import { Check } from '@element-plus/icons-vue'
 import { getNodeFormComponent } from '../registry'
 import { validateNodeConfig } from '@workflows/node/utils/validation'
-import { getActionBlueprint } from '@workflows/node/utils/node'
+import { getActionBlueprint, getActionType } from '@workflows/node/utils/node'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -85,7 +87,7 @@ const currentActionHasOutput = computed(() => {
   if (!props.node) return false
   const action = props.node.data?.action
   const nodeDef = props.catalog.find(n => n.type === nodeTypeDisplay.value)
-  return getActionBlueprint(nodeDef, action?.key)?.has_response || false
+  return getActionBlueprint(nodeDef, getActionType(action))?.has_response || false
 })
 
 watch(() => props.node, (newNode) => {

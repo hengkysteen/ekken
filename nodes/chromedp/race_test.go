@@ -31,7 +31,7 @@ func TestConcurrentMetadataAccess(t *testing.T) {
 			// Setiap goroutine mencoba akses Metadata
 			browserNode := &BrowserNode{
 				Action: node.ActionFromMap(map[string]interface{}{
-					"action": "navigate",
+					"type": "navigate",
 					"url":    "https://example.com",
 				}),
 			}

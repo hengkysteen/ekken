@@ -28,11 +28,10 @@
           <el-table-column label="Reference" min-width="300">
             <template #default="{ row }">
               <el-space>
-                <el-text type="primary" style="font-weight: bold;">
+                <el-text type="primary">
                   {{ formatRef(row.key) }}
                 </el-text>
-                <el-button text class="row-copy-btn" :icon="CopyDocument" size="small"
-                  @click="copyRef(row.key)">copy</el-button>
+                <el-button text class="row-copy-btn" size="small" @click="copyRef(row.key)">copy</el-button>
               </el-space>
             </template>
           </el-table-column>
@@ -41,8 +40,8 @@
             <template #default="{ row }">
               <template v-if="normalizeTags(row.tags).length > 0">
                 <el-space :size="4">
-                  <el-tag v-for="(tag, idx) in normalizeTags(row.tags).slice(0, 2)" :key="idx" size="small" round
-                    effect="plain" type="info">
+                  <el-tag disable-transitions v-for="(tag, idx) in normalizeTags(row.tags).slice(0, 2)" :key="idx"
+                    size="small" round effect="plain" type="info">
                     {{ tag }}
                   </el-tag>
                   <el-popover v-if="normalizeTags(row.tags).length > 2" placement="top" trigger="hover" width="auto">
@@ -121,7 +120,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, CopyDocument, Search } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import { credentialsApi } from '@credentials/api'
 import type { Credential } from '@credentials/api'
 import AppPage from '@shared/components/AppPage.vue'

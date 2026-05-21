@@ -3,16 +3,23 @@ import { ref, computed } from 'vue'
 import type { SettingsTab } from '../../core/types/module'
 import { systemApi as api } from '../api/system'
 import type { DeviceInfo } from '../api/system'
+import { Storage } from '../utils/storage'
+
+const SettingsStorageKeys = {
+  ENABLE_MONITORING: 'settings_enable_monitoring',
+  ENABLE_POLLING: 'settings_enable_polling',
+  POLLING_INTERVAL: 'settings_polling_interval',
+}
 
 export const useAppSettingsStore = defineStore('appSettings', () => {
   const settingsTabs = ref<SettingsTab[]>([])
 
   // Resource Monitoring Settings
-  const enableMonitoring = ref(localStorage.getItem('settings_enable_monitoring') !== 'false')
-  const enablePolling = ref(localStorage.getItem('settings_enable_polling') !== 'false')
+  const enableMonitoring = ref(Storage.get<string>(SettingsStorageKeys.ENABLE_MONITORING) !== 'false')
+  const enablePolling = ref(Storage.get<string>(SettingsStorageKeys.ENABLE_POLLING) !== 'false')
   
   // Fix: Handle migration from ms to seconds
-  const savedInterval = Number(localStorage.getItem('settings_polling_interval'))
+  const savedInterval = Number(Storage.get<string | number>(SettingsStorageKeys.POLLING_INTERVAL))
   const pollingInterval = ref(savedInterval >= 500 ? savedInterval / 1000 : (savedInterval || 2))
 
   const deviceInfo = ref<DeviceInfo>({
@@ -23,9 +30,9 @@ export const useAppSettingsStore = defineStore('appSettings', () => {
   let pollInterval: any = null
 
   const saveSettings = () => {
-    localStorage.setItem('settings_enable_monitoring', enableMonitoring.value.toString())
-    localStorage.setItem('settings_enable_polling', enablePolling.value.toString())
-    localStorage.setItem('settings_polling_interval', pollingInterval.value.toString())
+    Storage.set(SettingsStorageKeys.ENABLE_MONITORING, enableMonitoring.value.toString())
+    Storage.set(SettingsStorageKeys.ENABLE_POLLING, enablePolling.value.toString())
+    Storage.set(SettingsStorageKeys.POLLING_INTERVAL, pollingInterval.value.toString())
   }
 
   const fetchDeviceInfo = async () => {

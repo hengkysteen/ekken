@@ -13,12 +13,12 @@ func Validate(wf Workflow) node.ValidationResult {
 		issues = append(issues, "workflow.name is required")
 	}
 
-	index := make(map[string]node.NodeSpec)
+	index := make(map[string]node.Spec)
 	for _, r := range node.GlobalRegistry.AllSpecs() {
 		index[r.Type] = r
 	}
 	node.ValidateNodes(wf.Nodes, "workflow.nodes", index, &issues)
-	
+
 	// Ensure at least one trigger node exists
 	hasTrigger := false
 	for _, n := range wf.Nodes {

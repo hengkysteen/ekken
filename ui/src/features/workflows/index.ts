@@ -8,7 +8,7 @@ const workflowModule: EkkenModule = {
 
   routes: [
     {
-      path: 'workflows',
+      path: '',
       name: 'workflows',
       component: () => import('./workflow/views/WorkflowsView.vue'),
       meta: { breadcrumb: 'Workflows' }
@@ -17,7 +17,12 @@ const workflowModule: EkkenModule = {
       path: 'workflow/:id',
       name: 'workflow',
       component: () => import('./workflow/views/WorkflowEditor.vue'),
-      meta: { breadcrumb: ':id', parent: '/workflows' }
+      meta: {
+        breadcrumbs: [
+          { label: 'Workflows', path: '/' },
+          { label: ':id' }
+        ]
+      }
     }
   ],
 
@@ -25,7 +30,7 @@ const workflowModule: EkkenModule = {
     {
       label: 'Workflows',
       icon: markRaw(CopyDocument),
-      path: '/workflows',
+      path: '/',
       name: 'workflows',
       order: 20
     }

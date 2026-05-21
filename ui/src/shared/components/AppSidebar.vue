@@ -46,7 +46,7 @@
     </nav>
 
     <div class="sidebar-footer">
-      <ListTile class="user-card" :clickable="true" :style="{ margin: '4px 0' }">
+      <ListTile class="user-card" :clickable="true" :style="{ margin: '4px 0' }" @click="isSettingsModalOpen = true">
         <template #leading>
           <el-avatar :size="32" src="https://ui-avatars.com/api/?name=J+D&background=0D8ABC&color=fff" />
         </template>
@@ -55,27 +55,36 @@
             <div class="user-name">Jhon Doe</div>
           </div>
         </template>
+        <template #subtitle>
+          <div class="user-subtitle">Ekken Admin</div>
+        </template>
       </ListTile>
     </div>
+
+    <el-dialog v-model="isSettingsModalOpen" title="Settings" width="min(960px, 92vw)" destroy-on-close
+      class="settings-dialog">
+      <SettingsPanel />
+    </el-dialog>
   </div>
 </template>
 
 
 
 <script setup lang="ts">
-import { computed, markRaw } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import {
-  House, Setting,
   Expand
 } from '@element-plus/icons-vue'
 import AppLogo from './AppLogo.vue'
 import ListTile from './ListTile.vue'
+import SettingsPanel from './SettingsPanel.vue'
 import { useAppSidebarStore } from '../stores/useAppSidebarStore'
 
 const sidebarStore = useAppSidebarStore()
 
 const router = useRouter()
+const isSettingsModalOpen = ref(false)
 
 const props = withDefaults(defineProps<{
   isCollapsed: boolean,
@@ -94,13 +103,9 @@ const sidebarWidth = computed(() => {
   return w.endsWith('px') || w.endsWith('%') || w.endsWith('rem') ? w : `${w}px`
 })
 
-const menuItems = [
-  { label: 'Dashboard', icon: markRaw(House), path: '/', name: 'dashboard' },
-]
+const menuItems: any[] = []
 
-const systemItems = [
-  { label: 'Settings', icon: markRaw(Setting), path: '/settings', name: 'settings', order: 200 },
-]
+const systemItems: any[] = []
 
 // Dynamic items from modules
 const dynamicItems = computed(() => sidebarStore.sortedItems)
@@ -118,7 +123,6 @@ const allSystemItems = computed(() => {
 })
 
 const activeKey = computed(() => {
-  if (route.path === '/') return 'dashboard'
   const found = [...allMenuItems.value, ...allSystemItems.value].find(i => i.path === route.path)
   return found?.name || ''
 })
@@ -244,6 +248,16 @@ const activeKey = computed(() => {
   margin-top: auto;
 }
 
+:global(.settings-dialog .el-dialog__body) {
+  height: 70vh;
+  padding: 0;
+  overflow: hidden;
+}
+
+:global(.settings-dialog .settings-content) {
+  padding: 0 32px 32px 32px;
+}
+
 .user-card {
   border-radius: 12px !important;
 }
@@ -251,5 +265,14 @@ const activeKey = computed(() => {
 .user-name {
   font-size: 13px;
   font-weight: 700;
+}
+
+.user-subtitle {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 </style>

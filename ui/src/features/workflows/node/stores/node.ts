@@ -6,10 +6,22 @@ import type { NodeDefinition } from '../types/node'
 export const useNodeStore = defineStore('node', () => {
   const catalog = ref<NodeDefinition[]>([])
   const catalogFilterGroup = ref<string | null>(null)
+  const isLoading = ref(false)
+  const error = ref<string | null>(null)
 
   async function loadCatalog() {
-    const data = await nodeApi.getCatalog()
-    catalog.value = data || []
+    isLoading.value = true
+    error.value = null
+    try {
+      const data = await nodeApi.getCatalog()
+      catalog.value = data || []
+    } catch (err: any) {
+      error.value = err?.message || 'Failed to load node catalog'
+      catalog.value = []
+      throw err
+    } finally {
+      isLoading.value = false
+    }
   }
 
   function findDef(type: string) {
@@ -34,6 +46,8 @@ export const useNodeStore = defineStore('node', () => {
   return {
     catalog,
     catalogFilterGroup,
+    isLoading,
+    error,
     pickerGroups,
     loadCatalog,
     findDef

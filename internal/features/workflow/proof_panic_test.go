@@ -28,7 +28,7 @@ func TestRunner_NoPanicRecovery(t *testing.T) {
 	wf := Workflow{
 		ID: "wf-panic",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "panic_node"}, ID: "n1"},
+			{Meta: node.Meta{Type: "panic_node"}, ID: "n1"},
 		},
 	}
 
@@ -36,7 +36,7 @@ func TestRunner_NoPanicRecovery(t *testing.T) {
 	// Jika sistem memiliki Panic Recovery (defer recover), fungsi ini akan return error.
 	// Jika tidak, test runner Go ini akan CRASH dan berhenti total.
 	err := eng.Run(context.Background(), wf)
-	
+
 	// Jika kode sampai ke baris ini, berarti panic berhasil ditangani (recovered).
 	if err == nil {
 		t.Fatal("Expected an error from panic recovery, got nil")

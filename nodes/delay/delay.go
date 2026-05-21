@@ -7,14 +7,14 @@ import (
 )
 
 type DelayNode struct {
-	Action node.NodeAction
+	Action node.Action
 	Output any
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "delay",
 				Label:       "Delay",
 				Icon:        "https://www.svgrepo.com/show/86792/sand-clock.svg",
@@ -23,9 +23,9 @@ func init() {
 			},
 
 			DefaultAction: "seconds",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:         "seconds",
+					Type:        "seconds",
 					Label:       "Seconds",
 					Description: "Pause execution for specified duration",
 					Fields: []node.NodeField{
@@ -45,7 +45,7 @@ func init() {
 			},
 			Outputs: []node.HandleEdge{{Key: "success", Label: "Success"}}},
 
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &DelayNode{Action: action}
 		},
 	})

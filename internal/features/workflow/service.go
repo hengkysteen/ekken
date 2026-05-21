@@ -195,9 +195,9 @@ func sanitizeWorkflowForStorage(wf Workflow) Workflow {
 	return wf
 }
 
-func sanitizeActionForStorage(action node.NodeAction) node.NodeAction {
-	clean := node.NodeAction{
-		Key:         action.Key,
+func sanitizeActionForStorage(action node.Action) node.Action {
+	clean := node.Action{
+		Type:        action.Type,
 		ResponseVar: action.ResponseVar,
 		Fields:      make([]node.NodeField, 0, len(action.Fields)),
 	}

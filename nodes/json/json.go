@@ -10,13 +10,13 @@ import (
 )
 
 type JsonNode struct {
-	Action node.NodeAction
+	Action node.Action
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "json",
 				Label:       "JSON",
 				Icon:        "https://www.svgrepo.com/show/458247/json.svg",
@@ -25,9 +25,9 @@ func init() {
 			},
 
 			DefaultAction: "extract",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:          "extract",
+					Type:         "extract",
 					Label:        "Extract",
 					Description:  "Extract a value by path",
 					HasResponse:  true,
@@ -52,7 +52,7 @@ func init() {
 					},
 				},
 				{
-					Key:          "extract_stream",
+					Type:         "extract_stream",
 					Label:        "Extract Stream",
 					Description:  "Extract values from SSE, JSONL, or JSON array data",
 					HasResponse:  true,
@@ -82,7 +82,7 @@ func init() {
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &JsonNode{Action: action}
 		},
 	})
@@ -95,7 +95,7 @@ func (n *JsonNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, err
 	default:
 	}
 
-	action := n.Action.Key
+	action := n.Action.Type
 	if action == "" {
 		action = "extract"
 	}

@@ -4,11 +4,14 @@
       <ElCol v-for="item in row" :key="item.key" :span="getSpan(item.flex, row)">
         <!-- Input components with v-model -->
         <component v-if="isInputComponent(item.component)" :is="getComponent(item.component, item.key)"
-          :model-value="modelValue ? modelValue[item.key] : getFieldFromAll(item.key).value" @update:model-value="updateField(item.key, $event)"
-          :field="{ ...getFieldFromAll(item.key), value: (modelValue ? modelValue[item.key] : getFieldFromAll(item.key).value), ...(item.options || {}) }" :item="normalizeItem(item)" />
+          :model-value="modelValue ? modelValue[item.key] : getFieldFromAll(item.key).value"
+          @update:model-value="updateField(item.key, $event)"
+          :field="{ ...getFieldFromAll(item.key), value: (modelValue ? modelValue[item.key] : getFieldFromAll(item.key).value), ...(item.options || {}) }"
+          :item="normalizeItem(item)" />
         <!-- Non-input components without v-model -->
         <component v-else :is="getComponent(item.component, item.key)"
-          :field="{ ...getFieldFromAll(item.key), value: (modelValue ? modelValue[item.key] : getFieldFromAll(item.key).value), ...(item.options || {}) }" :item="normalizeItem(item)" />
+          :field="{ ...getFieldFromAll(item.key), value: (modelValue ? modelValue[item.key] : getFieldFromAll(item.key).value), ...(item.options || {}) }"
+          :item="normalizeItem(item)" />
       </ElCol>
     </ElRow>
 
@@ -17,9 +20,9 @@
       <ElCollapseItem title="Advanced Settings" name="advanced">
         <ElRow v-for="field in unrenderedGlobalFields" :key="field.key" :gutter="16">
           <ElCol :span="24">
-            <component :is="getComponent(undefined, field.key)" 
+            <component :is="getComponent(undefined, field.key)"
               :model-value="modelValue ? modelValue[field.key] : field.value"
-              @update:model-value="updateGlobalField(field.key, $event)" 
+              @update:model-value="updateGlobalField(field.key, $event)"
               :field="{ ...field, value: (modelValue ? modelValue[field.key] : field.value) }"
               :item="{ key: field.key, component: getDefaultComponent(field.type) }" />
           </ElCol>
@@ -160,11 +163,5 @@ function isInputComponent(component?: string): boolean {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.advanced-settings {
-  margin-top: 8px;
-  border-top: 1px solid var(--el-border-color-lighter);
-  padding-top: 8px;
 }
 </style>

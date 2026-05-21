@@ -67,7 +67,7 @@
                   </template>
                   <template #subtitle>
                     <el-space :size="4">
-                      <el-text size="small" type="primary" bold>{{ item.action?.key }}</el-text>
+                      <el-text size="small" type="primary" bold>{{ getActionType(item.action) }}</el-text>
                     </el-space>
                   </template>
                   <template #trailing>
@@ -130,6 +130,7 @@ const isInitialNodeRequired = computed(() => props.workflowNodes.length === 0)
 import { useTheme } from '../../../../shared/composables/useTheme'
 const { isDarkMode: isDark } = useTheme()
 import { matchesSearch, matchesMyNodeSearch } from '../../node/utils/search'
+import { getActionType } from '../../node/utils/node'
 
 const iconStyle = computed(() => ({
   filter: isDark.value ? 'invert(1) brightness(1.5)' : 'none'

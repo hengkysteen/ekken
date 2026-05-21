@@ -62,8 +62,8 @@ export interface AutoLayout {
  * Used for nodes that have different configuration schemas based on the action.
  */
 export interface NodeAction {
-  /** Unique action key (e.g., "login", "send") */
-  key: string
+  /** Unique action type (e.g., "login", "send") */
+  type: string
 
   /** Variable name to save this action's output to */
   response_var?: string

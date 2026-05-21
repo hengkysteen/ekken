@@ -95,18 +95,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     await fetchWorkflows()
   }
 
-  // --- Execution Actions ---
-
-  async function runWorkflow(id: string) {
-    await api.runWorkflow(id)
-    statuses.value[id] = 'running'
-  }
-
-  async function stopWorkflow(id: string) {
-    await api.stopWorkflow(id)
-    statuses.value[id] = 'stopped'
-  }
-
   return {
     // State
     workflows,
@@ -127,8 +115,5 @@ export const useWorkflowStore = defineStore('workflow', () => {
     createWorkflow,
     deleteWorkflow,
 
-    // Execution
-    runWorkflow,
-    stopWorkflow,
   }
 })

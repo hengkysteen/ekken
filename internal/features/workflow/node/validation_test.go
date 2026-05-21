@@ -5,10 +5,10 @@ import (
 	"testing"
 )
 
-func makeIndex(types ...string) map[string]NodeSpec {
-	index := make(map[string]NodeSpec)
+func makeIndex(types ...string) map[string]Spec {
+	index := make(map[string]Spec)
 	for _, t := range types {
-		index[t] = NodeSpec{NodeMetadata: NodeMetadata{Type: t}}
+		index[t] = Spec{Meta: Meta{Type: t}}
 	}
 	return index
 }
@@ -16,16 +16,16 @@ func makeIndex(types ...string) map[string]NodeSpec {
 // Should pass when dependency node exists and is in the correct order.
 func TestValidateNodes_DependsOn_NodePresent(t *testing.T) {
 	index := makeIndex("chrome", "click")
-	index["click"] = NodeSpec{
-		NodeMetadata: NodeMetadata{
+	index["click"] = Spec{
+		Meta: Meta{
 			Type:      "click",
-			DependsOn: []NodeDependency{{Node: "chrome"}},
+			DependsOn: []DependsOn{{Node: "chrome"}},
 		},
 	}
 
 	nodes := []Node{
-		{NodeMetadata: NodeMetadata{Type: "chrome"}, ID: "n1"},
-		{NodeMetadata: NodeMetadata{Type: "click"}, ID: "n2"},
+		{Meta: Meta{Type: "chrome"}, ID: "n1"},
+		{Meta: Meta{Type: "click"}, ID: "n2"},
 	}
 
 	issues := make([]string, 0)
@@ -39,15 +39,15 @@ func TestValidateNodes_DependsOn_NodePresent(t *testing.T) {
 // Should fail when catalog dependency is missing in the workflow.
 func TestValidateNodes_DependsOn_NodeMissing(t *testing.T) {
 	index := makeIndex("click")
-	index["click"] = NodeSpec{
-		NodeMetadata: NodeMetadata{
+	index["click"] = Spec{
+		Meta: Meta{
 			Type:      "click",
-			DependsOn: []NodeDependency{{Node: "chrome"}},
+			DependsOn: []DependsOn{{Node: "chrome"}},
 		},
 	}
 
 	nodes := []Node{
-		{NodeMetadata: NodeMetadata{Type: "click"}, ID: "n1"},
+		{Meta: Meta{Type: "click"}, ID: "n1"},
 	}
 
 	issues := make([]string, 0)
@@ -64,9 +64,9 @@ func TestValidateNodes_DependsOn_NodeLevel(t *testing.T) {
 
 	nodes := []Node{
 		{
-			NodeMetadata: NodeMetadata{
+			Meta: Meta{
 				Type:      "click",
-				DependsOn: []NodeDependency{{Node: "chrome"}},
+				DependsOn: []DependsOn{{Node: "chrome"}},
 			},
 			ID: "n1",
 		},
@@ -96,7 +96,7 @@ func TestValidateNodes_MissingType(t *testing.T) {
 // Should fail when node type doesn't exist in catalog.
 func TestValidateNodes_UnknownType(t *testing.T) {
 	index := makeIndex("chrome")
-	nodes := []Node{{NodeMetadata: NodeMetadata{Type: "unknown_type"}, ID: "n1"}}
+	nodes := []Node{{Meta: Meta{Type: "unknown_type"}, ID: "n1"}}
 
 	issues := make([]string, 0)
 	ValidateNodes(nodes, "workflow.nodes", index, &issues)
@@ -106,16 +106,16 @@ func TestValidateNodes_UnknownType(t *testing.T) {
 	}
 }
 
-// Should fail when action key doesn't exist in catalog.
+// Should fail when action type doesn't exist in catalog.
 func TestValidateNodes_UnknownAction(t *testing.T) {
 	index := makeIndex("chrome")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions:      []NodeAction{{Key: "launch"}},
+	index["chrome"] = Spec{
+		Meta:    Meta{Type: "chrome"},
+		Actions: []Action{{Type: "launch"}},
 	}
 	nodes := []Node{{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Action:       NodeAction{Key: "navigate"}, // Invalid action
+		Meta:   Meta{Type: "chrome"},
+		Action: Action{Type: "navigate"}, // Invalid action
 	}}
 
 	issues := make([]string, 0)
@@ -129,18 +129,18 @@ func TestValidateNodes_UnknownAction(t *testing.T) {
 // Should fail when a required field is completely missing.
 func TestValidateNodes_MissingRequiredField(t *testing.T) {
 	index := makeIndex("chrome")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions: []NodeAction{
+	index["chrome"] = Spec{
+		Meta: Meta{Type: "chrome"},
+		Actions: []Action{
 			{
-				Key:    "launch",
+				Type:   "launch",
 				Fields: []NodeField{{Key: "url", Required: true}},
 			},
 		},
 	}
 	nodes := []Node{{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Action:       NodeAction{Key: "launch"}, // Missing URL
+		Meta:   Meta{Type: "chrome"},
+		Action: Action{Type: "launch"}, // Missing URL
 	}}
 
 	issues := make([]string, 0)
@@ -154,19 +154,19 @@ func TestValidateNodes_MissingRequiredField(t *testing.T) {
 // Should pass when required field is provided with a valid value.
 func TestValidateNodes_ValidRequiredField(t *testing.T) {
 	index := makeIndex("chrome")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions: []NodeAction{
+	index["chrome"] = Spec{
+		Meta: Meta{Type: "chrome"},
+		Actions: []Action{
 			{
-				Key:    "launch",
+				Type:   "launch",
 				Fields: []NodeField{{Key: "url", Required: true}},
 			},
 		},
 	}
 	nodes := []Node{{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Action: NodeAction{
-			Key:    "launch",
+		Meta: Meta{Type: "chrome"},
+		Action: Action{
+			Type:   "launch",
 			Fields: []NodeField{{Key: "url", Value: "https://example.com"}},
 		},
 	}}
@@ -182,19 +182,19 @@ func TestValidateNodes_ValidRequiredField(t *testing.T) {
 // Should automatically fill empty field with default catalog value.
 func TestValidateNodes_DefaultValuePopulation(t *testing.T) {
 	index := makeIndex("chrome")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions: []NodeAction{
+	index["chrome"] = Spec{
+		Meta: Meta{Type: "chrome"},
+		Actions: []Action{
 			{
-				Key:    "launch",
+				Type:   "launch",
 				Fields: []NodeField{{Key: "timeout", Required: true, Default: 60}},
 			},
 		},
 	}
 	nodes := []Node{{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Action: NodeAction{
-			Key:    "launch",
+		Meta: Meta{Type: "chrome"},
+		Action: Action{
+			Type:   "launch",
 			Fields: []NodeField{{Key: "timeout", Required: true, Value: nil}}, // Empty value
 		},
 	}}
@@ -212,24 +212,24 @@ func TestValidateNodes_DefaultValuePopulation(t *testing.T) {
 	}
 }
 
-// Should pass when dependency matches both node type and action key.
+// Should pass when dependency matches both node type and action type.
 func TestValidateNodes_DependsOn_Success(t *testing.T) {
 	index := makeIndex("chrome", "click")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions:      []NodeAction{{Key: "launch"}},
+	index["chrome"] = Spec{
+		Meta:    Meta{Type: "chrome"},
+		Actions: []Action{{Type: "launch"}},
 	}
-	index["click"] = NodeSpec{
-		NodeMetadata: NodeMetadata{
+	index["click"] = Spec{
+		Meta: Meta{
 			Type:      "click",
-			DependsOn: []NodeDependency{{Node: "chrome", Action: "launch"}},
+			DependsOn: []DependsOn{{Node: "chrome", Action: "launch"}},
 		},
-		Actions: []NodeAction{{Key: "click_btn"}},
+		Actions: []Action{{Type: "click_btn"}},
 	}
 
 	nodes := []Node{
-		{NodeMetadata: NodeMetadata{Type: "chrome"}, Action: NodeAction{Key: "launch"}},
-		{NodeMetadata: NodeMetadata{Type: "click"}, Action: NodeAction{Key: "click_btn"}},
+		{Meta: Meta{Type: "chrome"}, Action: Action{Type: "launch"}},
+		{Meta: Meta{Type: "click"}, Action: Action{Type: "click_btn"}},
 	}
 
 	issues := make([]string, 0)
@@ -243,19 +243,19 @@ func TestValidateNodes_DependsOn_Success(t *testing.T) {
 // Should fail when a required field has an empty string value.
 func TestValidateNodes_EmptyRequiredFieldValue(t *testing.T) {
 	index := makeIndex("chrome")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions: []NodeAction{
+	index["chrome"] = Spec{
+		Meta: Meta{Type: "chrome"},
+		Actions: []Action{
 			{
-				Key:    "launch",
+				Type:   "launch",
 				Fields: []NodeField{{Key: "url", Required: true}},
 			},
 		},
 	}
 	nodes := []Node{{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Action: NodeAction{
-			Key:    "launch",
+		Meta: Meta{Type: "chrome"},
+		Action: Action{
+			Type:   "launch",
 			Fields: []NodeField{{Key: "url", Value: ""}}, // Value is empty string
 		},
 	}}
@@ -279,19 +279,19 @@ func TestValidateNodes_EmptyRequiredFieldValue(t *testing.T) {
 // Should ignore client-provided schema flags and validate against catalog.
 func TestValidateNodes_AlteredSchema_RequiredFalse(t *testing.T) {
 	index := makeIndex("chrome")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions: []NodeAction{
+	index["chrome"] = Spec{
+		Meta: Meta{Type: "chrome"},
+		Actions: []Action{
 			{
-				Key:    "launch",
+				Type:   "launch",
 				Fields: []NodeField{{Key: "url", Required: true}},
 			},
 		},
 	}
 	nodes := []Node{{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Action: NodeAction{
-			Key: "launch",
+		Meta: Meta{Type: "chrome"},
+		Action: Action{
+			Type: "launch",
 			// Client/LLM illegally manipulates the schema
 			Fields: []NodeField{{Key: "url", Required: false, Value: "https://example.com"}},
 		},
@@ -308,19 +308,19 @@ func TestValidateNodes_AlteredSchema_RequiredFalse(t *testing.T) {
 // Should fail when payload contains a field that is not defined in the catalog.
 func TestValidateNodes_UnknownField(t *testing.T) {
 	index := makeIndex("chrome")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions: []NodeAction{
+	index["chrome"] = Spec{
+		Meta: Meta{Type: "chrome"},
+		Actions: []Action{
 			{
-				Key:    "launch",
+				Type:   "launch",
 				Fields: []NodeField{{Key: "url", Type: "string", Required: true}},
 			},
 		},
 	}
 	nodes := []Node{{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Action: NodeAction{
-			Key: "launch",
+		Meta: Meta{Type: "chrome"},
+		Action: Action{
+			Type: "launch",
 			Fields: []NodeField{
 				{Key: "url", Value: "https://example.com"},
 				{Key: "unexpected", Value: "x"},
@@ -346,23 +346,23 @@ func TestValidateNodes_UnknownField(t *testing.T) {
 // Should fail when dependency node is placed below the node that needs it.
 func TestValidateNodes_DependsOn_PositionBelow(t *testing.T) {
 	index := makeIndex("chrome", "click")
-	index["chrome"] = NodeSpec{
-		NodeMetadata: NodeMetadata{Type: "chrome"},
-		Actions:      []NodeAction{{Key: "launch"}},
+	index["chrome"] = Spec{
+		Meta:    Meta{Type: "chrome"},
+		Actions: []Action{{Type: "launch"}},
 	}
-	index["click"] = NodeSpec{
-		NodeMetadata: NodeMetadata{
+	index["click"] = Spec{
+		Meta: Meta{
 			Type:      "click",
-			DependsOn: []NodeDependency{{Node: "chrome", Action: "launch"}},
+			DependsOn: []DependsOn{{Node: "chrome", Action: "launch"}},
 		},
-		Actions: []NodeAction{{Key: "click_btn"}},
+		Actions: []Action{{Type: "click_btn"}},
 	}
 
 	nodes := []Node{
 		// Node that needs dependency comes FIRST (Array Index 0)
-		{NodeMetadata: NodeMetadata{Type: "click"}, Action: NodeAction{Key: "click_btn"}},
+		{Meta: Meta{Type: "click"}, Action: Action{Type: "click_btn"}},
 		// Node that satisfies dependency comes LATER (Array Index 1)
-		{NodeMetadata: NodeMetadata{Type: "chrome"}, Action: NodeAction{Key: "launch"}},
+		{Meta: Meta{Type: "chrome"}, Action: Action{Type: "launch"}},
 	}
 
 	issues := make([]string, 0)

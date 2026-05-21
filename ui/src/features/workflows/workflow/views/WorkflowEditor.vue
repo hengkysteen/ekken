@@ -149,19 +149,33 @@ async function handleStop() {
   await runnerHandleStop()
 }
 
+function getErrorMessage(err: unknown) {
+  return err instanceof Error ? err.message : String(err || 'Unknown error')
+}
+
 onMounted(async () => {
   try {
     await nodeStore.loadCatalog()
     await editor.loadWorkflow(workflowId.value)
-    await mynodeStore.loadItems()
-    
+
     workflowName.value = editor.workflow?.name || ''
     originalName.value = editor.workflow?.name || ''
+  } catch (err) {
+    ElMessage.error('Failed to load workflow editor: ' + getErrorMessage(err))
+    return
+  }
 
-    // Load initial logs
+  await mynodeStore.loadItems()
+  if (mynodeStore.error) {
+    ElMessage.warning(mynodeStore.error)
+  }
+
+  try {
     const initialLogs = await api.getWorkflowLogs(workflowId.value)
     setLogs(initialLogs || [])
-  } catch (err) { }
+  } catch (err) {
+    ElMessage.warning('Failed to load workflow logs')
+  }
   
   await syncStatus()
   if (isRunning.value) connectSSE()

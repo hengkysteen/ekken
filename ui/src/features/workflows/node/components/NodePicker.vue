@@ -69,7 +69,7 @@
                   <template #subtitle>
                     <div style="display: flex; align-items: flex-start; gap: 8px; width: 100%; min-width: 0;">
                       <el-tag size="small" effect="plain" style="flex-shrink: 0;">{{ item.label }}</el-tag>
-                      <el-text type="info" size="small" style="flex: 1;">{{ item.action?.key }}</el-text>
+                      <el-text type="info" size="small" style="flex: 1;">{{ getActionType(item.action) }}</el-text>
                     </div>
                   </template>
                 </list-tile>
@@ -90,6 +90,7 @@ import type { MyNodesItem } from '@workflows/mynode/types'
 import { useTheme } from '../../../../shared/composables/useTheme'
 import type { NodeDefinition } from '../types/node'
 import { matchesSearch, matchesMyNodeSearch } from '../utils/search'
+import { getActionType } from '../utils/node'
 
 interface GroupedNodes {
   name: string

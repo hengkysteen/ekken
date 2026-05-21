@@ -51,7 +51,7 @@ func (t *DependencyTracker) ClearWorkflow(workflowID string) {
 }
 
 // CheckDependsOn verifies that all declared dependencies have been executed for the given workflow.
-func (t *DependencyTracker) CheckDependsOn(workflowID string, deps []NodeDependency) error {
+func (t *DependencyTracker) CheckDependsOn(workflowID string, deps []DependsOn) error {
 	t.mu.RLock()
 	executed := t.executedDeps[workflowID]
 	t.mu.RUnlock()

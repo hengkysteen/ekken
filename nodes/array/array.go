@@ -9,13 +9,13 @@ import (
 )
 
 type ArrayNode struct {
-	Action node.NodeAction
+	Action node.Action
 }
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "array",
 				Label:       "Array",
 				Icon:        "https://www.svgrepo.com/show/458043/array.svg",
@@ -23,9 +23,9 @@ func init() {
 				Description: "Array utility operations.",
 			},
 			DefaultAction: "last",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:          "last",
+					Type:         "last",
 					Label:        "Last",
 					Description:  "Return the last item from an array",
 					HasResponse:  true,
@@ -34,7 +34,7 @@ func init() {
 					AutoLayout:   inputLayout(),
 				},
 				{
-					Key:          "first",
+					Type:         "first",
 					Label:        "First",
 					Description:  "Return the first item from an array",
 					HasResponse:  true,
@@ -43,7 +43,7 @@ func init() {
 					AutoLayout:   inputLayout(),
 				},
 				{
-					Key:          "get",
+					Type:         "get",
 					Label:        "Get",
 					Description:  "Return an item by index",
 					HasResponse:  true,
@@ -58,7 +58,7 @@ func init() {
 					},
 				},
 				{
-					Key:          "length",
+					Type:         "length",
 					Label:        "Length",
 					Description:  "Return the array length",
 					HasResponse:  true,
@@ -67,7 +67,7 @@ func init() {
 					AutoLayout:   inputLayout(),
 				},
 				{
-					Key:          "join",
+					Type:         "join",
 					Label:        "Join",
 					Description:  "Join array items into text",
 					HasResponse:  true,
@@ -87,7 +87,7 @@ func init() {
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &ArrayNode{Action: action}
 		},
 	})
@@ -110,7 +110,7 @@ func (n *ArrayNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, er
 	default:
 	}
 
-	action := n.Action.Key
+	action := n.Action.Type
 	if action == "" {
 		action = "last"
 	}
@@ -236,7 +236,7 @@ func (n *ArrayNode) arrayJoin(items []any) string {
 	return strings.Join(parts, separator)
 }
 
-func fieldInt(action node.NodeAction, key string) (int, error) {
+func fieldInt(action node.Action, key string) (int, error) {
 	value := node.FieldValue(action, key)
 	switch v := value.(type) {
 	case int:

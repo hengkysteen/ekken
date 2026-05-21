@@ -34,31 +34,51 @@ onMounted(() => {
   settingsStore.startPolling()
 })
 
+type BreadcrumbItem = {
+  label: string
+  path?: string
+}
+
+const resolveBreadcrumbLabel = (label: string) => {
+  if (!label.startsWith(':')) return label
+
+  const idValue = route.params[label.slice(1)] as string
+  return titleRegistry[idValue] || idValue || label
+}
+
 const breadcrumbs = computed(() => {
-  const items = [{ label: 'Ekken', path: '/' }]
+  const items: BreadcrumbItem[] = [{ label: 'Ekken', path: '/' }]
   const currentRecord = route.matched[route.matched.length - 1]
   if (!currentRecord) return items
+
+  const explicitBreadcrumbs = currentRecord.meta.breadcrumbs as BreadcrumbItem[] | undefined
+  if (explicitBreadcrumbs?.length) {
+    explicitBreadcrumbs.forEach((breadcrumb, index) => {
+      const path = breadcrumb.path ?? (index === explicitBreadcrumbs.length - 1 ? route.path : undefined)
+      items.push({
+        label: resolveBreadcrumbLabel(breadcrumb.label),
+        path
+      })
+    })
+
+    return items
+  }
 
   const parentPath = currentRecord.meta.parent as string | undefined
   if (parentPath && parentPath !== currentRecord.path) {
     const parentRecord = router.getRoutes().find(r => r.path === parentPath)
     if (parentRecord && parentRecord.meta?.breadcrumb) {
       items.push({
-        label: parentRecord.meta.breadcrumb as string,
-        path: parentRecord.path
+        label: resolveBreadcrumbLabel(parentRecord.meta.breadcrumb as string),
+        path: parentPath
       })
     }
   }
 
   if (currentRecord.meta.breadcrumb) {
-    let label = currentRecord.meta.breadcrumb as string
-    if (label.startsWith(':')) {
-      const idValue = route.params[label.slice(1)] as string
-      // AUTO LOOKUP in our Global Registry
-      label = titleRegistry[idValue] || idValue || label
-    }
+    const label = resolveBreadcrumbLabel(currentRecord.meta.breadcrumb as string)
 
-    if (!items.find(i => i.path === route.path)) {
+    if (!items.find(i => i.path === route.path && i.label === label)) {
       items.push({ label, path: route.path })
     }
   }

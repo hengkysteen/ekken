@@ -7,7 +7,7 @@ import (
 )
 
 // ValidateNodes recursively validates a list of nodes against the provided index of specifications.
-func ValidateNodes(ns []Node, path string, index map[string]NodeSpec, issues *[]string) {
+func ValidateNodes(ns []Node, path string, index map[string]Spec, issues *[]string) {
 	// Track which combinations of Node Type + Action exist in the workflow prior to the current node
 	nodesInWorkflow := make(map[string]bool)
 
@@ -31,10 +31,10 @@ func ValidateNodes(ns []Node, path string, index map[string]NodeSpec, issues *[]
 		}
 
 		// Validate action-specific fields
-		action := node.Action.Key
+		action := node.Action.Type
 		if action == "" {
 			action = def.DefaultAction
-			ns[i].Action.Key = action
+			ns[i].Action.Type = action
 		}
 
 		var fieldsToValidate []NodeField
@@ -43,7 +43,7 @@ func ValidateNodes(ns []Node, path string, index map[string]NodeSpec, issues *[]
 		if action != "" {
 			actionFound := false
 			for _, actionDef := range def.Actions {
-				if actionDef.Key == action {
+				if actionDef.Type == action {
 					fieldsToValidate = append(fieldsToValidate, actionDef.Fields...)
 					actionFound = true
 					break
@@ -118,7 +118,7 @@ func IsEmptyValue(value interface{}) bool {
 	}
 }
 
-func setFieldDefault(action *NodeAction, key string, value any) {
+func setFieldDefault(action *Action, key string, value any) {
 	for j := range action.Fields {
 		if action.Fields[j].Key == key {
 			action.Fields[j].Value = value

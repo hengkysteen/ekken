@@ -7,13 +7,16 @@ import { serializeActionForSave } from '@workflows/node/utils/node'
 export const useMyNodeStore = defineStore('mynode', () => {
   const items = ref<MyNodesItem[]>([])
   const isLoading = ref(false)
+  const error = ref<string | null>(null)
 
   async function loadItems() {
     isLoading.value = true
+    error.value = null
     try {
       items.value = await api.getMyNodesItems()
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load my nodes:', err)
+      error.value = err?.message || 'Failed to load my nodes'
       items.value = []
     } finally {
       isLoading.value = false
@@ -44,6 +47,7 @@ export const useMyNodeStore = defineStore('mynode', () => {
   return {
     items,
     isLoading,
+    error,
     loadItems,
     saveItem,
     deleteItem,

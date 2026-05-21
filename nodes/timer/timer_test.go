@@ -31,7 +31,7 @@ func executor(config map[string]any) *TimerNode {
 // --- Manual ---
 
 func TestManual_FirstIteration(t *testing.T) {
-	n := executor(map[string]any{"action": "manual"})
+	n := executor(map[string]any{"type": "manual"})
 	res, err := n.Execute(makeCtx(0))
 	if err != nil || res.Handle != "success" {
 		t.Fatalf("got err=%v handle=%q, want nil/success", err, res.Handle)
@@ -39,7 +39,7 @@ func TestManual_FirstIteration(t *testing.T) {
 }
 
 func TestManual_SecondIteration_Complete(t *testing.T) {
-	n := executor(map[string]any{"action": "manual"})
+	n := executor(map[string]any{"type": "manual"})
 	_, err := n.Execute(makeCtx(1))
 	if err != node.ErrWorkflowComplete {
 		t.Fatalf("got %v, want ErrWorkflowComplete", err)
@@ -49,7 +49,7 @@ func TestManual_SecondIteration_Complete(t *testing.T) {
 // --- Interval ---
 
 func TestInterval_Success(t *testing.T) {
-	n := executor(map[string]any{"action": "interval", "interval": float64(0), "count": float64(0)})
+	n := executor(map[string]any{"type": "interval", "interval": float64(0), "count": float64(0)})
 	res, err := n.Execute(makeCtx(0))
 	if err != nil || res.Handle != "success" {
 		t.Fatalf("got err=%v handle=%q", err, res.Handle)
@@ -57,7 +57,7 @@ func TestInterval_Success(t *testing.T) {
 }
 
 func TestInterval_CountReached(t *testing.T) {
-	n := executor(map[string]any{"action": "interval", "interval": float64(1), "count": float64(2)})
+	n := executor(map[string]any{"type": "interval", "interval": float64(1), "count": float64(2)})
 	_, err := n.Execute(makeCtx(2))
 	if err != node.ErrWorkflowComplete {
 		t.Fatalf("got %v, want ErrWorkflowComplete", err)
@@ -66,7 +66,7 @@ func TestInterval_CountReached(t *testing.T) {
 
 func TestInterval_Stop(t *testing.T) {
 	ctx, stop := makeCtxWithStop(0)
-	n := executor(map[string]any{"action": "interval", "interval": float64(60), "count": float64(0)})
+	n := executor(map[string]any{"type": "interval", "interval": float64(60), "count": float64(0)})
 
 	done := make(chan error, 1)
 	go func() {
@@ -83,7 +83,7 @@ func TestInterval_Stop(t *testing.T) {
 }
 
 func TestInterval_NegativeCount_Error(t *testing.T) {
-	n := executor(map[string]any{"action": "interval", "count": float64(-1)})
+	n := executor(map[string]any{"type": "interval", "count": float64(-1)})
 	_, err := n.Execute(makeCtx(0))
 	if err == nil {
 		t.Fatal("expected error for negative count")
@@ -91,7 +91,7 @@ func TestInterval_NegativeCount_Error(t *testing.T) {
 }
 
 func TestInterval_NegativeInterval_Error(t *testing.T) {
-	n := executor(map[string]any{"action": "interval", "interval": float64(-1), "count": float64(0)})
+	n := executor(map[string]any{"type": "interval", "interval": float64(-1), "count": float64(0)})
 	_, err := n.Execute(makeCtx(0))
 	if err == nil {
 		t.Fatal("expected error for negative interval")
@@ -109,7 +109,7 @@ func runAndWait(n *TimerNode, ctx *node.NodeContext) {
 
 func TestInterval_IsLooping_Unlimited(t *testing.T) {
 	ctx := makeCtx(0)
-	n := executor(map[string]any{"action": "interval", "interval": float64(0), "count": float64(0)})
+	n := executor(map[string]any{"type": "interval", "interval": float64(0), "count": float64(0)})
 	runAndWait(n, ctx)
 	if !ctx.IsLooping {
 		t.Fatal("expected IsLooping=true for unlimited count")
@@ -118,7 +118,7 @@ func TestInterval_IsLooping_Unlimited(t *testing.T) {
 
 func TestInterval_IsLooping_NotLastIteration(t *testing.T) {
 	ctx := makeCtx(0)
-	n := executor(map[string]any{"action": "interval", "interval": float64(0), "count": float64(3)})
+	n := executor(map[string]any{"type": "interval", "interval": float64(0), "count": float64(3)})
 	runAndWait(n, ctx)
 	if !ctx.IsLooping {
 		t.Fatal("expected IsLooping=true when not last iteration")
@@ -127,7 +127,7 @@ func TestInterval_IsLooping_NotLastIteration(t *testing.T) {
 
 func TestInterval_IsLooping_LastIteration(t *testing.T) {
 	ctx := makeCtx(1)
-	n := executor(map[string]any{"action": "interval", "interval": float64(0), "count": float64(2)})
+	n := executor(map[string]any{"type": "interval", "interval": float64(0), "count": float64(2)})
 	runAndWait(n, ctx)
 	if ctx.IsLooping {
 		t.Fatal("expected IsLooping=false on last iteration")
@@ -137,7 +137,7 @@ func TestInterval_IsLooping_LastIteration(t *testing.T) {
 // --- Cron ---
 
 func TestCron_MissingExpression(t *testing.T) {
-	n := executor(map[string]any{"action": "cron", "count": float64(0)})
+	n := executor(map[string]any{"type": "cron", "count": float64(0)})
 	_, err := n.Execute(makeCtx(0))
 	if err == nil {
 		t.Fatal("expected error for missing cron expression")
@@ -145,7 +145,7 @@ func TestCron_MissingExpression(t *testing.T) {
 }
 
 func TestCron_InvalidExpression(t *testing.T) {
-	n := executor(map[string]any{"action": "cron", "cron": "not-a-cron", "count": float64(0)})
+	n := executor(map[string]any{"type": "cron", "cron": "not-a-cron", "count": float64(0)})
 	_, err := n.Execute(makeCtx(0))
 	if err == nil {
 		t.Fatal("expected error for invalid cron expression")
@@ -155,7 +155,7 @@ func TestCron_InvalidExpression(t *testing.T) {
 func TestCron_Stop(t *testing.T) {
 	ctx, stop := makeCtxWithStop(0)
 	// every minute — won't fire during test
-	n := executor(map[string]any{"action": "cron", "cron": "0 * * * * *", "count": float64(0)})
+	n := executor(map[string]any{"type": "cron", "cron": "0 * * * * *", "count": float64(0)})
 
 	done := make(chan error, 1)
 	go func() {
@@ -172,7 +172,7 @@ func TestCron_Stop(t *testing.T) {
 }
 
 func TestCron_CountReached(t *testing.T) {
-	n := executor(map[string]any{"action": "cron", "cron": "0 * * * * *", "count": float64(1)})
+	n := executor(map[string]any{"type": "cron", "cron": "0 * * * * *", "count": float64(1)})
 	_, err := n.Execute(makeCtx(1))
 	if err != node.ErrWorkflowComplete {
 		t.Fatalf("got %v, want ErrWorkflowComplete", err)

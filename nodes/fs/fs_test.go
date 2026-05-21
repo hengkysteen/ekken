@@ -20,7 +20,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write simple content",
 			config: map[string]any{
-				"action":  "write",
+				"type":  "write",
 				"path":    "testdata/write_simple.txt",
 				"content": "hello world",
 			},
@@ -39,7 +39,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write with template variable",
 			config: map[string]any{
-				"action":  "write",
+				"type":  "write",
 				"path":    "testdata/write_template.txt",
 				"content": "{{message}}",
 			},
@@ -58,7 +58,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write with explicit variable",
 			config: map[string]any{
-				"action":  "write",
+				"type":  "write",
 				"path":    "testdata/write_output.txt",
 				"content": "{{my_data}}",
 			},
@@ -77,7 +77,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write creates nested directories",
 			config: map[string]any{
-				"action":  "write",
+				"type":  "write",
 				"path":    "testdata/nested/deep/file.txt",
 				"content": "nested content",
 			},
@@ -96,7 +96,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write overwrites existing file",
 			config: map[string]any{
-				"action":  "write",
+				"type":  "write",
 				"path":    "testdata/overwrite.txt",
 				"content": "new content",
 			},
@@ -115,7 +115,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write empty path",
 			config: map[string]any{
-				"action":  "write",
+				"type":  "write",
 				"path":    "",
 				"content": "content",
 			},
@@ -127,7 +127,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write with path template",
 			config: map[string]any{
-				"action":  "write",
+				"type":  "write",
 				"path":    "testdata/{{filename}}.txt",
 				"content": "dynamic path",
 			},
@@ -204,7 +204,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append to existing file",
 			config: map[string]any{
-				"action":  "append",
+				"type":  "append",
 				"path":    "testdata/append_existing.txt",
 				"content": " appended",
 			},
@@ -227,7 +227,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append to non-existing file",
 			config: map[string]any{
-				"action":  "append",
+				"type":  "append",
 				"path":    "testdata/append_new.txt",
 				"content": "first line",
 			},
@@ -246,7 +246,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append multiple times",
 			config: map[string]any{
-				"action":  "append",
+				"type":  "append",
 				"path":    "testdata/append_multiple.txt",
 				"content": "line\n",
 			},
@@ -269,7 +269,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append with template",
 			config: map[string]any{
-				"action":  "append",
+				"type":  "append",
 				"path":    "testdata/append_template.txt",
 				"content": "{{data}}",
 			},
@@ -292,7 +292,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append creates nested directories",
 			config: map[string]any{
-				"action":  "append",
+				"type":  "append",
 				"path":    "testdata/append/nested/file.txt",
 				"content": "content",
 			},
@@ -311,7 +311,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append empty path",
 			config: map[string]any{
-				"action":  "append",
+				"type":  "append",
 				"path":    "",
 				"content": "content",
 			},
@@ -378,7 +378,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 func TestFSNode_Stop(t *testing.T) {
 	n := &FSNode{
 		Action: node.ActionFromMap(map[string]any{
-			"action":  "write",
+			"type":  "write",
 			"path":    "testdata/stop.txt",
 			"content": "content",
 		}),
@@ -417,7 +417,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 		{
 			name: "delete existing file",
 			config: map[string]any{
-				"action": "delete",
+				"type": "delete",
 				"path":   "testdata/delete_file.txt",
 			},
 			variables: map[string]interface{}{},
@@ -435,7 +435,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 		{
 			name: "delete existing directory",
 			config: map[string]any{
-				"action": "delete",
+				"type": "delete",
 				"path":   "testdata/delete_dir",
 			},
 			variables: map[string]interface{}{},
@@ -453,7 +453,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 		{
 			name: "delete non-existing path",
 			config: map[string]any{
-				"action": "delete",
+				"type": "delete",
 				"path":   "testdata/non_existing",
 			},
 			variables:  map[string]interface{}{},
@@ -462,7 +462,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 		{
 			name: "delete with template",
 			config: map[string]any{
-				"action": "delete",
+				"type": "delete",
 				"path":   "testdata/{{target}}",
 			},
 			variables: map[string]interface{}{"target": "delete_me.txt"},
@@ -480,7 +480,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 		{
 			name: "delete empty path",
 			config: map[string]any{
-				"action": "delete",
+				"type": "delete",
 				"path":   "",
 			},
 			variables:   map[string]interface{}{},
@@ -491,7 +491,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 		{
 			name: "delete multiple paths",
 			config: map[string]any{
-				"action": "delete",
+				"type": "delete",
 				"path":   "testdata/f1.txt\ntestdata/f2.txt",
 			},
 			variables: map[string]interface{}{},

@@ -10,7 +10,7 @@ import (
 )
 
 type TimerNode struct {
-	action node.NodeAction
+	action node.Action
 }
 
 var (
@@ -21,8 +21,8 @@ var (
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "timer",
 				Tags:        []string{"Trigger"},
 				Label:       "Timer",
@@ -30,9 +30,9 @@ func init() {
 				Description: "Workflow entry point (manual, interval, or cron)",
 			},
 			DefaultAction: "manual",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:         "manual",
+					Type:        "manual",
 					Label:       "Manual",
 					Description: "Trigger workflow manually (runs once)",
 					HasResponse: false,
@@ -51,7 +51,7 @@ func init() {
 					},
 				},
 				{
-					Key:         "interval",
+					Type:        "interval",
 					Label:       "Interval",
 					Description: "Trigger workflow at regular intervals",
 					HasResponse: false,
@@ -78,7 +78,7 @@ func init() {
 					},
 				},
 				{
-					Key:         "cron",
+					Type:        "cron",
 					Label:       "Cron",
 					Description: "Trigger workflow based on cron expression",
 					HasResponse: false,
@@ -107,7 +107,7 @@ func init() {
 
 			Outputs: []node.HandleEdge{{Key: "success", Label: "Success", Tone: "success"}},
 		},
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &TimerNode{action: action}
 		},
 	})
@@ -134,7 +134,7 @@ func (n *TimerNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, er
 		return node.NodeExecutionResult{}, node.ErrWorkflowComplete
 	}
 
-	switch n.action.Key {
+	switch n.action.Type {
 	case "interval":
 		return n.executeInterval(ctx, count)
 	case "cron":

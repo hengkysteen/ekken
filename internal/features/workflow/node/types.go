@@ -5,17 +5,17 @@ import (
 	"errors"
 )
 
-type NodeMetadata struct {
-	Type        string           `json:"type"`
-	Label       string           `json:"label,omitempty"`
-	Description string           `json:"description,omitempty"`
-	Icon        string           `json:"icon,omitempty"`
-	Tags        []string         `json:"tags,omitempty"`
-	DependsOn   []NodeDependency `json:"depends_on,omitempty"`
+type Meta struct {
+	Type        string      `json:"type"`
+	Label       string      `json:"label,omitempty"`
+	Description string      `json:"description,omitempty"`
+	Icon        string      `json:"icon,omitempty"`
+	Tags        []string    `json:"tags,omitempty"`
+	DependsOn   []DependsOn `json:"depends_on,omitempty"`
 }
-type NodeSpec struct {
-	NodeMetadata
-	Actions       []NodeAction `json:"actions"`
+type Spec struct {
+	Meta
+	Actions       []Action     `json:"actions"`
 	DefaultAction string       `json:"default_action,omitempty"`
 	GlobalFields  []NodeField  `json:"global_fields,omitempty"`
 	Outputs       []HandleEdge `json:"outputs,omitempty"`
@@ -42,8 +42,8 @@ type AutoLayout struct {
 	// Regular Options : helper (string), placeholder (string), disabled (bool).
 	Options any `json:"options,omitempty"`
 }
-type NodeAction struct {
-	Key          string            `json:"key"`
+type Action struct {
+	Type         string            `json:"type"`
 	Label        string            `json:"label,omitempty"`
 	Description  string            `json:"description,omitempty"`
 	HasResponse  bool              `json:"has_response,omitempty"`
@@ -52,16 +52,18 @@ type NodeAction struct {
 	Fields       []NodeField       `json:"fields"`
 	AutoLayout   [][]AutoLayout    `json:"auto_layout,omitempty"`
 }
-type NodeDependency struct {
-	Node   string `json:"node"`
+type DependsOn struct {
+	// Node Type
+	Node string `json:"node"`
+	// Action Type
 	Action string `json:"action"`
 }
 type Node struct {
-	NodeMetadata
-	ID              string     `json:"id,omitempty"`
-	Action          NodeAction `json:"action"`
-	OnError         string     `json:"on_error,omitempty"`
-	ContinueOnError bool       `json:"continue_on_error,omitempty"`
+	Meta
+	ID              string `json:"id,omitempty"`
+	Action          Action `json:"action"`
+	OnError         string `json:"on_error,omitempty"`
+	ContinueOnError bool   `json:"continue_on_error,omitempty"`
 }
 type Position struct {
 	X float64 `json:"x"`
@@ -116,10 +118,10 @@ var (
 type NodeExecutor interface {
 	Execute(ctx *NodeContext) (NodeExecutionResult, error)
 }
-type NodeExecutorFactory func(action NodeAction) NodeExecutor
+type NodeExecutorFactory func(action Action) NodeExecutor
 
 type NodeRegistration struct {
-	NodeSpec
+	Spec
 	ExecutorFactory NodeExecutorFactory
 }
 

@@ -15,7 +15,7 @@ import (
 )
 
 type HTTPNode struct {
-	Action node.NodeAction
+	Action node.Action
 }
 
 type curlRequest struct {
@@ -27,8 +27,8 @@ type curlRequest struct {
 
 func init() {
 	node.GlobalRegistry.Register(node.NodeRegistration{
-		NodeSpec: node.NodeSpec{
-			NodeMetadata: node.NodeMetadata{
+		Spec: node.Spec{
+			Meta: node.Meta{
 				Type:        "http",
 				Tags:        []string{"Network"},
 				Label:       "HTTP",
@@ -36,9 +36,9 @@ func init() {
 				Description: "Call HTTP endpoints from a curl command.",
 			},
 			DefaultAction: "curl",
-			Actions: []node.NodeAction{
+			Actions: []node.Action{
 				{
-					Key:          "curl",
+					Type:         "curl",
 					Label:        "Curl",
 					Description:  "Send an HTTP request using curl syntax",
 					HasResponse:  true,
@@ -57,10 +57,6 @@ func init() {
 								Key:       "curl",
 								Component: "textarea",
 								Flex:      24,
-								Options: map[string]any{
-									"helper":      "Curl command",
-									"placeholder": "curl -X POST https://api.example.com -H 'Content-Type: application/json' -d '{\"name\":\"Ekken\"}'",
-								},
 							},
 						},
 					},
@@ -75,7 +71,7 @@ func init() {
 				{Key: "error", Label: "Error", Tone: "error"},
 			},
 		},
-		ExecutorFactory: func(action node.NodeAction) node.NodeExecutor {
+		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &HTTPNode{Action: action}
 		},
 	})
@@ -88,7 +84,7 @@ func (n *HTTPNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, err
 	default:
 	}
 
-	action := n.Action.Key
+	action := n.Action.Type
 	if action == "" {
 		action = "curl"
 	}

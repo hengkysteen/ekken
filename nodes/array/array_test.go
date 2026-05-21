@@ -19,56 +19,56 @@ func TestArrayNodeExecute(t *testing.T) {
 	}{
 		{
 			name:      "last from exact variable",
-			config:    map[string]any{"action": "last", "input": "{{items}}"},
+			config:    map[string]any{"type": "last", "input": "{{items}}"},
 			variables: map[string]any{"items": []any{"first", "last"}},
 			want:      "last",
 			wantType:  "application/json",
 		},
 		{
 			name:      "first",
-			config:    map[string]any{"action": "first", "input": "{{items}}"},
+			config:    map[string]any{"type": "first", "input": "{{items}}"},
 			variables: map[string]any{"items": []any{"first", "last"}},
 			want:      "first",
 			wantType:  "application/json",
 		},
 		{
 			name:      "get negative index",
-			config:    map[string]any{"action": "get", "input": "{{items}}", "index": -1.0},
+			config:    map[string]any{"type": "get", "input": "{{items}}", "index": -1.0},
 			variables: map[string]any{"items": []any{"first", "last"}},
 			want:      "last",
 			wantType:  "application/json",
 		},
 		{
 			name:      "length",
-			config:    map[string]any{"action": "length", "input": "{{items}}"},
+			config:    map[string]any{"type": "length", "input": "{{items}}"},
 			variables: map[string]any{"items": []any{"a", "b", "c"}},
 			want:      3,
 			wantType:  "application/json",
 		},
 		{
 			name:      "join strings",
-			config:    map[string]any{"action": "join", "input": "{{items}}", "separator": ""},
+			config:    map[string]any{"type": "join", "input": "{{items}}", "separator": ""},
 			variables: map[string]any{"items": []any{"", "1", " +", " 1 = **", "2**"}},
 			want:      "1 + 1 = **2**",
 			wantType:  "text/plain",
 		},
 		{
 			name:      "parse json array input",
-			config:    map[string]any{"action": "last", "input": "[{\"id\":1},{\"id\":2}]"},
+			config:    map[string]any{"type": "last", "input": "[{\"id\":1},{\"id\":2}]"},
 			variables: map[string]any{},
 			want:      map[string]any{"id": float64(2)},
 			wantType:  "application/json",
 		},
 		{
 			name:        "non array input",
-			config:      map[string]any{"action": "last", "input": "{{value}}"},
+			config:      map[string]any{"type": "last", "input": "{{value}}"},
 			variables:   map[string]any{"value": "not array"},
 			wantErr:     true,
 			errContains: "input must be an array",
 		},
 		{
 			name:        "empty array",
-			config:      map[string]any{"action": "last", "input": "{{items}}"},
+			config:      map[string]any{"type": "last", "input": "{{items}}"},
 			variables:   map[string]any{"items": []any{}},
 			wantErr:     true,
 			errContains: "array is empty",
@@ -121,13 +121,13 @@ func TestArraySpecHasResponseVars(t *testing.T) {
 	}
 	for _, action := range spec.Actions {
 		if !action.HasResponse {
-			t.Fatalf("action %s HasResponse = false", action.Key)
+			t.Fatalf("action %s HasResponse = false", action.Type)
 		}
-		if action.ResponseVar != "array."+action.Key+"_" {
-			t.Fatalf("action %s ResponseVar = %q", action.Key, action.ResponseVar)
+		if action.ResponseVar != "array."+action.Type+"_" {
+			t.Fatalf("action %s ResponseVar = %q", action.Type, action.ResponseVar)
 		}
 		if len(action.AutoLayout) == 0 {
-			t.Fatalf("action %s AutoLayout is empty", action.Key)
+			t.Fatalf("action %s AutoLayout is empty", action.Type)
 		}
 	}
 }

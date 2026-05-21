@@ -27,19 +27,19 @@ func (m *MockObserver) OnLog(id, level, message, raw string) {
 
 type MockRegistry struct {
 	Executors map[string]node.NodeExecutor
-	Specs     map[string]node.NodeSpec
+	Specs     map[string]node.Spec
 }
 
-func (m *MockRegistry) GetExecutor(nodeType string, action node.NodeAction) node.NodeExecutor {
+func (m *MockRegistry) GetExecutor(nodeType string, action node.Action) node.NodeExecutor {
 	return m.Executors[nodeType]
 }
-func (m *MockRegistry) GetSpec(nodeType string) (node.NodeSpec, bool) {
+func (m *MockRegistry) GetSpec(nodeType string) (node.Spec, bool) {
 	if m.Specs != nil {
 		if spec, ok := m.Specs[nodeType]; ok {
 			return spec, true
 		}
 	}
-	return node.NodeSpec{NodeMetadata: node.NodeMetadata{Type: nodeType, Tags: []string{"Trigger"}}}, true
+	return node.Spec{Meta: node.Meta{Type: nodeType, Tags: []string{"Trigger"}}}, true
 }
 
 type MockExecutor struct {
@@ -66,10 +66,8 @@ func TestRunner_RunLinear(t *testing.T) {
 	eng := New(obs, reg)
 
 	wf := Workflow{
-		ID: "test-wf",
-		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "test-node"}, ID: "n1"},
-		},
+		ID:    "test-wf",
+		Nodes: []node.Node{{Meta: node.Meta{Type: "test-node"}, ID: "n1"}},
 	}
 
 	err := eng.Run(context.Background(), wf)
@@ -100,8 +98,8 @@ func TestRunner_RunGraph(t *testing.T) {
 	wf := Workflow{
 		ID: "graph-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "step"}, ID: "n1"},
-			{NodeMetadata: node.NodeMetadata{Type: "step"}, ID: "n2"},
+			{Meta: node.Meta{Type: "step"}, ID: "n1"},
+			{Meta: node.Meta{Type: "step"}, ID: "n2"},
 		},
 		Edges: []node.Edge{
 			{Source: "n1", SourceHandle: "success", Target: "n2"},
@@ -140,9 +138,9 @@ func TestRunner_Retry(t *testing.T) {
 		ID: "retry-wf",
 		Nodes: []node.Node{
 			{
-				NodeMetadata: node.NodeMetadata{Type: "fail-then-pass"},
-				ID:           "n1",
-				Action: node.NodeAction{
+				Meta: node.Meta{Type: "fail-then-pass"},
+				ID:   "n1",
+				Action: node.Action{
 					Fields: []node.NodeField{
 						{Key: "retry_count", Value: 2.0},
 						{Key: "retry_delay", Value: 0.01},
@@ -184,8 +182,8 @@ func TestRunner_OnErrorStop(t *testing.T) {
 	wf := Workflow{
 		ID: "error-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "fail"}, ID: "n1", OnError: "stop"},
-			{NodeMetadata: node.NodeMetadata{Type: "second"}, ID: "n2"},
+			{Meta: node.Meta{Type: "fail"}, ID: "n1", OnError: "stop"},
+			{Meta: node.Meta{Type: "second"}, ID: "n2"},
 		},
 	}
 
@@ -215,9 +213,9 @@ func TestRunner_SaveAs(t *testing.T) {
 		ID: "save-wf",
 		Nodes: []node.Node{
 			{
-				NodeMetadata: node.NodeMetadata{Type: "producer"},
-				ID:           "n1",
-				Action: node.NodeAction{
+				Meta: node.Meta{Type: "producer"},
+				ID:   "n1",
+				Action: node.Action{
 					ResponseVar: "my_var",
 				},
 			},
@@ -253,7 +251,7 @@ func TestRunner_Cancellation(t *testing.T) {
 	wf := Workflow{
 		ID: "cancel-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "slow"}, ID: "n1"},
+			{Meta: node.Meta{Type: "slow"}, ID: "n1"},
 		},
 	}
 
@@ -284,9 +282,9 @@ func TestRunner_JSONExtraction(t *testing.T) {
 		ID: "json-wf",
 		Nodes: []node.Node{
 			{
-				NodeMetadata: node.NodeMetadata{Type: "producer"},
-				ID:           "n1",
-				Action: node.NodeAction{
+				Meta: node.Meta{Type: "producer"},
+				ID:   "n1",
+				Action: node.Action{
 					ResponseVar: "user_id",
 				},
 			},
@@ -319,7 +317,7 @@ func TestRunner_Looping(t *testing.T) {
 	wf := Workflow{
 		ID: "loop-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "looper"}, ID: "n1"},
+			{Meta: node.Meta{Type: "looper"}, ID: "n1"},
 		},
 	}
 
@@ -350,11 +348,11 @@ func TestRunner_Dependencies(t *testing.T) {
 				},
 			},
 		},
-		Specs: map[string]node.NodeSpec{
+		Specs: map[string]node.Spec{
 			"child": {
-				NodeMetadata: node.NodeMetadata{
+				Meta: node.Meta{
 					Type: "child",
-					DependsOn: []node.NodeDependency{
+					DependsOn: []node.DependsOn{
 						{Node: "parent", Action: "success"},
 					},
 				},
@@ -367,7 +365,7 @@ func TestRunner_Dependencies(t *testing.T) {
 	wfFail := Workflow{
 		ID: "dep-fail-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "child"}, ID: "c1"},
+			{Meta: node.Meta{Type: "child"}, ID: "c1"},
 		},
 		Edges: []node.Edge{},
 	}
@@ -381,8 +379,8 @@ func TestRunner_Dependencies(t *testing.T) {
 	wfSuccess := Workflow{
 		ID: "dep-success-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "parent"}, ID: "p1", Action: node.NodeAction{Key: "success"}},
-			{NodeMetadata: node.NodeMetadata{Type: "child"}, ID: "c1"},
+			{Meta: node.Meta{Type: "parent"}, ID: "p1", Action: node.Action{Type: "success"}},
+			{Meta: node.Meta{Type: "child"}, ID: "c1"},
 		},
 		Edges: []node.Edge{
 			{Source: "p1", SourceHandle: "success", Target: "c1"},
@@ -438,11 +436,11 @@ func TestRunner_ErrorEdgeRecovery(t *testing.T) {
 	wf := Workflow{
 		ID: "error-recovery-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "start"}, ID: "n1"},
-			{NodeMetadata: node.NodeMetadata{Type: "fail"}, ID: "n2"},
-			{NodeMetadata: node.NodeMetadata{Type: "skip"}, ID: "n3"},
-			{NodeMetadata: node.NodeMetadata{Type: "recovery"}, ID: "n4"},
-			{NodeMetadata: node.NodeMetadata{Type: "final"}, ID: "n5"},
+			{Meta: node.Meta{Type: "start"}, ID: "n1"},
+			{Meta: node.Meta{Type: "fail"}, ID: "n2"},
+			{Meta: node.Meta{Type: "skip"}, ID: "n3"},
+			{Meta: node.Meta{Type: "recovery"}, ID: "n4"},
+			{Meta: node.Meta{Type: "final"}, ID: "n5"},
 		},
 		Edges: []node.Edge{
 			{Source: "n1", SourceHandle: "success", Target: "n2"},
@@ -506,9 +504,9 @@ func TestRunner_OnErrorStopGraph(t *testing.T) {
 	wf := Workflow{
 		ID: "stop-graph-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "start"}, ID: "n1"},
-			{NodeMetadata: node.NodeMetadata{Type: "fail"}, ID: "n2", OnError: "stop"},
-			{NodeMetadata: node.NodeMetadata{Type: "should-not-run"}, ID: "n3"},
+			{Meta: node.Meta{Type: "start"}, ID: "n1"},
+			{Meta: node.Meta{Type: "fail"}, ID: "n2", OnError: "stop"},
+			{Meta: node.Meta{Type: "should-not-run"}, ID: "n3"},
 		},
 		Edges: []node.Edge{
 			{Source: "n1", SourceHandle: "success", Target: "n2"},
@@ -558,8 +556,8 @@ func TestRunner_OnErrorContinue(t *testing.T) {
 	wf := Workflow{
 		ID: "continue-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "fail"}, ID: "n1", OnError: "continue"},
-			{NodeMetadata: node.NodeMetadata{Type: "next"}, ID: "n2"},
+			{Meta: node.Meta{Type: "fail"}, ID: "n1", OnError: "continue"},
+			{Meta: node.Meta{Type: "next"}, ID: "n2"},
 		},
 		Edges: []node.Edge{
 			{Source: "n1", SourceHandle: "success", Target: "n2"},
@@ -600,7 +598,7 @@ func TestRunner_StatusUpdates(t *testing.T) {
 	wf := Workflow{
 		ID: "status-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "step"}, ID: "n1"},
+			{Meta: node.Meta{Type: "step"}, ID: "n1"},
 		},
 		Edges: []node.Edge{},
 	}
@@ -639,7 +637,7 @@ func TestRunner_LoopProtection(t *testing.T) {
 	wf := Workflow{
 		ID: "infinite-loop-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "loop"}, ID: "n1"},
+			{Meta: node.Meta{Type: "loop"}, ID: "n1"},
 		},
 		Edges: []node.Edge{
 			{Source: "n1", SourceHandle: "loop", Target: "n1"}, // Self-loop
@@ -681,8 +679,8 @@ func TestRunner_MultipleHandles(t *testing.T) {
 	wf := Workflow{
 		ID: "multi-handle-wf",
 		Nodes: []node.Node{
-			{NodeMetadata: node.NodeMetadata{Type: "router"}, ID: "n1"},
-			{NodeMetadata: node.NodeMetadata{Type: "custom-handler"}, ID: "n2"},
+			{Meta: node.Meta{Type: "router"}, ID: "n1"},
+			{Meta: node.Meta{Type: "custom-handler"}, ID: "n2"},
 		},
 		Edges: []node.Edge{
 			{Source: "n1", SourceHandle: "custom", Target: "n2"},
@@ -778,15 +776,15 @@ func TestWorkflowService_GetSanitizesRawPayload(t *testing.T) {
 				Name: "Workflow",
 				Nodes: []node.Node{
 					{
-						NodeMetadata: node.NodeMetadata{
+						Meta: node.Meta{
 							Type:        "http",
 							Label:       "HTTP",
 							Description: "catalog description",
 							Icon:        "icon.svg",
 							Tags:        []string{"Action"},
 						},
-						Action: node.NodeAction{
-							Key:         "request",
+						Action: node.Action{
+							Type:        "request",
 							Label:       "Request",
 							Description: "action description",
 							HasResponse: true,
@@ -806,7 +804,7 @@ func TestWorkflowService_GetSanitizesRawPayload(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if wf.Nodes[0].Icon != "" || wf.Nodes[0].Description != "" || len(wf.Nodes[0].Tags) != 0 {
-		t.Fatalf("expected sanitized workflow node metadata, got %+v", wf.Nodes[0].NodeMetadata)
+		t.Fatalf("expected sanitized workflow node metadata, got %+v", wf.Nodes[0].Meta)
 	}
 
 	var decoded Workflow
