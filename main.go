@@ -11,6 +11,8 @@ import (
 	"ekken/internal/logger"
 
 	_ "ekken/internal/features"
+
+	_ "ekken/providers"
 	_ "ekken/nodes"
 )
 
