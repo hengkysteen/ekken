@@ -48,11 +48,13 @@
     <div class="sidebar-footer">
       <ListTile class="user-card" :clickable="true" :style="{ margin: '4px 0' }" @click="isSettingsModalOpen = true">
         <template #leading>
-          <el-avatar :size="32" src="https://ui-avatars.com/api/?name=J+D&background=0D8ABC&color=fff" />
+          <el-avatar :size="32" style="background: var(--el-color-primary); color: #fff; font-weight: 700">
+            {{ profileStore.initials }}
+          </el-avatar>
         </template>
         <template #title>
           <div class="user-info">
-            <div class="user-name">Jhon Doe</div>
+            <div class="user-name">{{ profileStore.displayName }}</div>
           </div>
         </template>
         <template #subtitle>
@@ -80,8 +82,10 @@ import AppLogo from './AppLogo.vue'
 import ListTile from './ListTile.vue'
 import SettingsPanel from './SettingsPanel.vue'
 import { useAppSidebarStore } from '../stores/useAppSidebarStore'
+import { useProfileStore } from '@profile/stores/profile'
 
 const sidebarStore = useAppSidebarStore()
+const profileStore = useProfileStore()
 
 const router = useRouter()
 const isSettingsModalOpen = ref(false)

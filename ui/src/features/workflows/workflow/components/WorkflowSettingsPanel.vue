@@ -3,13 +3,13 @@
     <!-- Appearance Section -->
     <el-text class="subsection-title">Appearance</el-text>
     <el-form label-position="left" label-width="140px" class="settings-form">
-      <el-form-item label="Edge Style">
+      <el-form-item label="Edge Style" for="">
         <el-select v-model="edgeStyle" style="width: 100%">
           <el-option v-for="opt in edgeOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
         </el-select>
       </el-form-item>
 
-      <el-form-item label="Edge Animation">
+      <el-form-item label="Edge Animation" for="">
         <el-switch v-model="edgeAnimated" />
       </el-form-item>
 
@@ -49,11 +49,12 @@
 import { storeToRefs } from 'pinia'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
-import { workflowApi } from '@workflows/workflow/api'
+import { useWorkflowStore } from '@workflows/workflow/stores/workflow'
 import { useWorkflowEditorStore } from '@workflows/workflow/stores/workflowEditor'
 import { DEFAULT_EDGE_STYLE, DEFAULT_EDGE_ANIMATED } from '@workflows/workflow/utils/workflowSettings'
 
 const editor = useWorkflowEditorStore()
+const workflows = useWorkflowStore()
 const { edgeStyle, edgeAnimated } = storeToRefs(editor)
 
 const edgeOptions = [
@@ -82,7 +83,7 @@ async function handleDeleteAllWorkflows() {
         distinguishCancelAndClose: true,
       }
     )
-    await workflowApi.deleteAllWorkflows()
+    await workflows.deleteAllWorkflows()
     ElMessage.success('All workflows deleted successfully')
   } catch (err) {
     if (err !== 'cancel' && err !== 'close') {

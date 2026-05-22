@@ -12,6 +12,9 @@
     <el-space>
       <ResourceMonitor />
       <el-divider direction="vertical" />
+      <el-tooltip v-if="profileStore.profile.pin_enabled" content="Lock app" placement="bottom">
+        <el-button circle plain :icon="Lock" @click="profileStore.lockApp()" />
+      </el-tooltip>
       <ThemeSwitcher />
     </el-space>
   </el-row>
@@ -20,15 +23,17 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { DArrowRight } from '@element-plus/icons-vue'
+import { DArrowRight, Lock } from '@element-plus/icons-vue'
 import ThemeSwitcher from './ThemeSwitcher.vue'
 import ResourceMonitor from './ResourceMonitor.vue'
 import { titleRegistry } from '@shared/utils/titleRegistry'
 import { useAppSettingsStore } from '../stores/useAppSettingsStore'
+import { useProfileStore } from '@profile/stores/profile'
 
 const route = useRoute()
 const router = useRouter()
 const settingsStore = useAppSettingsStore()
+const profileStore = useProfileStore()
 
 onMounted(() => {
   settingsStore.startPolling()

@@ -23,6 +23,7 @@
       "@assistant/*": ["./src/features/assistant/*"],
       "@plugins/*": ["./src/features/plugins/*"],
       "@credentials/*": ["./src/features/credentials/*"],
+      "@profile/*": ["./src/features/profile/*"],
       "@shared/*": ["./src/shared/*"]
     }
   },

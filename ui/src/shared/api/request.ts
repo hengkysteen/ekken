@@ -19,7 +19,6 @@ export async function request<T>(url: string, options: RequestInit = {}): Promis
 
   const data: ApiResponse<T> = await res.json()
   if (!data.ok) {
-    console.error('API Error:', { url, status: res.status, error: data.error })
     throw new Error(data.error || 'Request failed')
   }
   return data.data

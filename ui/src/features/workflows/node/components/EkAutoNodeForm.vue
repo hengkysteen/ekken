@@ -9,13 +9,25 @@
       <el-form-item v-if="nodeDef?.actions?.length" :for="`action-${node?.id}`">
         <template #label>
           <div class="flex items-center gap-2">
-            <span>Action</span>
+            <span>{{ nodeDef?.actions?.length > 1 ? 'Actions' : 'Action' }}</span>
             <el-text v-if="currentActionDescription" type="info" size="small">
               ({{ currentActionDescription }})
             </el-text>
           </div>
         </template>
-        <el-segmented :id="`action-${node?.id}`" v-model="currentActionType" :options="actionOptions" />
+        <el-select v-if="nodeDef?.actions?.length > 6" 
+          v-model="currentActionType" 
+          :id="`action-${node?.id}`"
+          style="width: 100%;">
+          <el-option v-for="action in actionOptions" 
+            :key="action.value" 
+            :label="action.label" 
+            :value="action.value" />
+        </el-select>
+        <el-segmented v-else 
+          :id="`action-${node?.id}`" 
+          v-model="currentActionType" 
+          :options="actionOptions" />
       </el-form-item>
 
       <template v-if="localAction">
@@ -55,10 +67,11 @@ const localGlobalFields = ref<any[]>([])
 
 const catalog = computed(() => nodeStore.catalog)
 const actionOptions = computed(() => {
-  return nodeDef.value?.actions?.map(action => ({
+  const options = nodeDef.value?.actions?.map(action => ({
     label: action.label,
     value: action.type
   })) || []
+  return options.sort((a, b) => a.label.localeCompare(b.label))
 })
 
 const nodeDef = computed(() => {

@@ -12,6 +12,7 @@ export const StorageKeys = {
   SIDEBAR_RIGHT_COLLAPSED: 'ekken-sidebar-right-collapsed',
   ASSISTANT_SIDEBAR_COLLAPSED: 'ekken-assistant-sidebar-collapsed',
   ASSISTANT_NEXT_GREETING: 'ekken-assistant-next-greeting',
+  PROFILE_UNLOCKED: 'ekken-profile-unlocked',
   CANVAS_DRAFT: (id: string) => `ekken-canvas-${id}`,
   EDGE_STYLE: 'ekken-edge-style',
   EDGE_ANIMATED: 'ekken-edge-animated',

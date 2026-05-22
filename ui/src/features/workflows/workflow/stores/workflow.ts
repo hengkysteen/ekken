@@ -95,6 +95,19 @@ export const useWorkflowStore = defineStore('workflow', () => {
     await fetchWorkflows()
   }
 
+  async function deleteAllWorkflows() {
+    const deletedIds = workflows.value.map((wf) => wf.id)
+
+    await api.deleteAllWorkflows()
+
+    for (const id of deletedIds) {
+      Storage.clearWorkflowData(id)
+    }
+    workflows.value = []
+    statuses.value = {}
+    initialized.value = true
+  }
+
   return {
     // State
     workflows,
@@ -114,6 +127,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     fetchWorkflows,
     createWorkflow,
     deleteWorkflow,
+    deleteAllWorkflows,
 
   }
 })

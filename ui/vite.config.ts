@@ -31,6 +31,7 @@ export default defineConfig(({ mode }) => {
         '@assistant': path.resolve(__dirname, './src/features/assistant'),
         '@plugins': path.resolve(__dirname, './src/features/plugins'),
         '@credentials': path.resolve(__dirname, './src/features/credentials'),
+        '@profile': path.resolve(__dirname, './src/features/profile'),
         '@shared': path.resolve(__dirname, './src/shared'),
       },
     },

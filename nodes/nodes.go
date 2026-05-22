@@ -9,5 +9,7 @@ import (
 	_ "ekken/nodes/http"
 	_ "ekken/nodes/ifelse"
 	_ "ekken/nodes/json"
+	_ "ekken/nodes/shell"
+	_ "ekken/nodes/string"
 	_ "ekken/nodes/timer"
 )

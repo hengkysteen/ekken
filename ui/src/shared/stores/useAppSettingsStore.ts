@@ -20,7 +20,7 @@ export const useAppSettingsStore = defineStore('appSettings', () => {
   
   // Fix: Handle migration from ms to seconds
   const savedInterval = Number(Storage.get<string | number>(SettingsStorageKeys.POLLING_INTERVAL))
-  const pollingInterval = ref(savedInterval >= 500 ? savedInterval / 1000 : (savedInterval || 2))
+  const pollingInterval = ref(savedInterval >= 500 ? savedInterval / 1000 : (savedInterval || 5))
 
   const deviceInfo = ref<DeviceInfo>({
     os: '', arch: '', hostname: '', cpu_model: '', cpu_cores: 0, cpu_usage: 0,
