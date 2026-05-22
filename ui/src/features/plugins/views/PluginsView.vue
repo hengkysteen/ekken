@@ -7,7 +7,7 @@
     <el-alert v-if="error" :title="error" type="error" :closable="false" style="margin-bottom: 20px;" />
     <div class="plugin-list-container">
       <el-empty v-if="initialized && !loading && plugins.length === 0" description="No plugins found" />
-      <el-table v-else :data="plugins" style="width: 100%" class="plugin-table">
+      <el-table v-else :data="plugins" style="width: 100%" class="plugin-table" :row-class-name="getRowClass">
         <el-table-column label="Plugin Name" min-width="100">
           <template #default="{ row }">
             <div class="plugin-identity">
@@ -36,10 +36,10 @@
         </el-table-column>
         <el-table-column label="Actions" width="200" align="center">
           <template #default="{ row }">
-            <el-button size="small" :type="row.is_enabled ? 'info' : 'primary'"
-              @click="handleAction(row, row.is_enabled ? 'disable' : 'enable')">
-              {{ row.is_enabled ? 'Disable' : 'Enable' }}
-            </el-button>
+            <el-switch
+              :model-value="row.is_enabled"
+              @change="(val: boolean | string | number) => handleAction(row, val ? 'enable' : 'disable')"
+            />
           </template>
         </el-table-column>
       </el-table>
@@ -57,6 +57,11 @@ const loading = ref(false)
 const initialized = ref(false)
 const error = ref('')
 const plugins = ref<PluginSummary[]>([])
+
+const getRowClass = ({ row }: { row: PluginSummary }) => {
+  return row.status === 'disabled' ? 'is-disabled-row' : ''
+}
+
 async function loadPlugins() {
   loading.value = true
   error.value = ''
@@ -91,5 +96,16 @@ onMounted(() => {
 
 .plugin-label {
   font-weight: 500;
+}
+
+/* Styles for disabled rows */
+:deep(.is-disabled-row) {
+  opacity: 0.5;
+  filter: grayscale(100%);
+  color: var(--el-text-color-disabled);
+}
+
+:deep(.is-disabled-row) .el-image {
+  opacity: 0.5;
 }
 </style>

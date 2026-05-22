@@ -30,7 +30,7 @@ const pluginsModule: EkkenModule = {
       icon: markRaw(Connection),
       path: '/plugins',
       name: 'plugins',
-      order: 100 // High order to put it in "System" section-like area if we want
+      order: 120 // Order > 110 (Credential) to put it below Credential
     }
   ],
 

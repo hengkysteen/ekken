@@ -23,15 +23,29 @@
         class="mb-6"
       />
 
+      <div class="flex gap-4 mb-6">
+        <el-input
+          v-model="searchQuery"
+          placeholder="Search plugins by name..."
+          clearable
+          class="flex-1"
+        />
+        <el-select v-model="kindFilter" placeholder="Filter by Kind" clearable style="width: 200px">
+          <el-option label="All Kinds" value="" />
+          <el-option label="Assistant" value="assistant" />
+          <el-option label="Node" value="node" />
+        </el-select>
+      </div>
+
       <div v-loading="loading" class="hub-content">
         <el-empty
-          v-if="initialized && !loading && plugins.length === 0"
-          description="No plugins available in the registry."
+          v-if="initialized && !loading && filteredPlugins.length === 0"
+          description="No plugins found matching your criteria."
         />
 
         <el-row v-else :gutter="24">
           <el-col
-            v-for="item in plugins"
+            v-for="item in filteredPlugins"
             :key="item.id"
             :xs="24" :sm="12" :md="12" :lg="8" :xl="6"
             class="mb-6"
@@ -58,9 +72,9 @@
                       </div>
                     </div>
                     <div class="flex items-center gap-1 mt-1">
-                      <el-text size="small" type="secondary">v{{ item.version || '0.0.0' }}</el-text>
+                      <el-text size="small" type="info">v{{ item.version || '0.0.0' }}</el-text>
                       <el-divider v-if="item.repo?.author" direction="vertical" class="mx-1" />
-                      <el-text v-if="item.repo?.author" size="small" type="secondary" truncated>{{ item.repo.author }}</el-text>
+                      <el-text v-if="item.repo?.author" size="small" type="info" truncated>{{ item.repo.author }}</el-text>
                     </div>
                   </div>
                 </div>
@@ -70,7 +84,7 @@
                   <el-text
                     class="mb-4 description-text"
                     :line-clamp="2"
-                    :type="item.description ? '' : 'placeholder'"
+                    :type="item.description ? '' : 'info'"
                   >
                     {{ item.description || 'No description provided for this plugin.' }}
                   </el-text>
@@ -98,7 +112,7 @@
                   </div>
 
                   <div v-if="shouldShowStatus(item)" class="flex items-center justify-between mb-2">
-                    <el-text size="small" type="secondary" class="uppercase tracking-wider font-bold">Status</el-text>
+                    <el-text size="small" type="info" class="uppercase tracking-wider font-bold">Status</el-text>
                     <el-tag :type="statusTag(item)" effect="dark" size="small" disable-transitions>
                       {{ statusLabel(item) }}
                     </el-tag>
@@ -169,9 +183,20 @@ const initialized = ref(false)
 const error = ref('')
 const registry = ref<RegistryResponse | null>(null)
 const installTasks = ref<Record<string, InstallTask>>({})
+const searchQuery = ref('')
+const kindFilter = ref('')
 let pollTimer: number | undefined
 
 const plugins = computed(() => registry.value?.plugins ?? [])
+
+const filteredPlugins = computed(() => {
+  return plugins.value.filter(plugin => {
+    const matchesSearch = plugin.name.toLowerCase().includes(searchQuery.value.toLowerCase()) || 
+                          plugin.id.toLowerCase().includes(searchQuery.value.toLowerCase())
+    const matchesKind = kindFilter.value ? plugin.kind === kindFilter.value : true
+    return matchesSearch && matchesKind
+  })
+})
 
 async function fetchRegistry() {
   loading.value = true
