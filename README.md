@@ -15,7 +15,7 @@ Bridge the gap between **manual precision** and **autonomous intelligence**. Mos
     - [x] Searches and stitches internal nodes.
     - [ ] Fetches from Plugin Hub when needed.
     - [ ] Synthesizes new nodes on-the-fly when the library falls short.🙂‍↕️
-- [ ] **Plugin Hub:** Remote fetching and management of curated, verified nodes.
+- [x] **Plugin Hub:** Remote fetching and management of curated, verified nodes.
 
 ---
 
