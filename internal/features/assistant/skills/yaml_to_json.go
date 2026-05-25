@@ -92,17 +92,46 @@ func ConvertToInternal(args map[string]interface{}, out *workflow.Workflow) erro
 			engineNode.Action.ResponseVar = respVar
 		} else if respVar, ok := nMap["responseVar"].(string); ok && respVar != "" {
 			engineNode.Action.ResponseVar = respVar
+		} else {
+			// Auto-fill from catalog if action has response
+			if spec, exists := node.GlobalRegistry.GetSpec(nodeType); exists {
+				for _, act := range spec.Actions {
+					if act.Type == actionType && act.HasResponse {
+						engineNode.Action.ResponseVar = fmt.Sprintf("%s.%s_", nodeType, actionType)
+						break
+					}
+				}
+			}
 		}
 
 		// Map dynamic fields (everything that is not metadata)
-		for key, val := range nMap {
-			if key == "id" || key == "action" || key == "response_var" || key == "responseVar" {
-				continue
+		if fieldsRaw, exists := nMap["fields"]; exists {
+			if fieldsMap, ok := fieldsRaw.(map[string]interface{}); ok {
+				for key, val := range fieldsMap {
+					engineNode.Action.Fields = append(engineNode.Action.Fields, node.NodeField{
+						Key:   key,
+						Value: val,
+					})
+				}
+			} else if fieldsMap, ok := fieldsRaw.(map[interface{}]interface{}); ok {
+				for key, val := range fieldsMap {
+					engineNode.Action.Fields = append(engineNode.Action.Fields, node.NodeField{
+						Key:   fmt.Sprint(key),
+						Value: val,
+					})
+				}
 			}
-			engineNode.Action.Fields = append(engineNode.Action.Fields, node.NodeField{
-				Key:   key,
-				Value: val,
-			})
+		} else {
+			// Fallback to flat fields
+			for key, val := range nMap {
+				if key == "id" || key == "action" || key == "response_var" || key == "responseVar" {
+					continue
+				}
+				engineNode.Action.Fields = append(engineNode.Action.Fields, node.NodeField{
+					Key:   key,
+					Value: val,
+				})
+			}
 		}
 
 		out.Nodes = append(out.Nodes, engineNode)

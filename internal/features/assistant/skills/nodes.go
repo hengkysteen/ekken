@@ -53,7 +53,6 @@ func (s *NodesList) Execute(args map[string]interface{}) (string, error) {
 	var sb strings.Builder
 
 	sb.WriteString(`
-Available Ekken Workflow Nodes:
 This list is an index only. It contains node types and action types, not full field definitions.
 Before writing workflow node fields, call 'nodes_actions' for each action that will appear in the workflow.
 
@@ -68,17 +67,15 @@ ekken~
 
 `)
 
+	sb.WriteString("Available Nodes:\n")
+
 	for _, n := range rawResp.Data {
 		fmt.Fprintf(&sb, "- Type: %s\n", n.Type)
 		fmt.Fprintf(&sb, "  Description: %s\n", n.Description)
 		if len(n.DependsOn) > 0 {
 			sb.WriteString("  Depends On:\n")
 			for _, d := range n.DependsOn {
-				if d.Action != "" {
-					fmt.Fprintf(&sb, "    - %s (%s)\n", d.Node, d.Action)
-				} else {
-					fmt.Fprintf(&sb, "    - %s\n", d.Node)
-				}
+				fmt.Fprintf(&sb, "    - %s.%s\n", d.Node, d.Action)
 			}
 		}
 		if len(n.Actions) > 0 {

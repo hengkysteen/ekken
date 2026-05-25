@@ -6,11 +6,10 @@ import (
 )
 
 func TestGetNodeActions(t *testing.T) {
-	// Test ini akan memanggil API asli yang sedang berjalan
 	skill := &NodesActions{}
 
 	args := map[string]any{
-		"actions": []any{"chromedp.input", "fs.delete"},
+		"actions": []any{"shell"},
 	}
 
 	result, err := skill.Execute(args)

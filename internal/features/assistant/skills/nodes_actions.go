@@ -1,6 +1,7 @@
 package skills
 
 import (
+	"ekken/internal/features/workflow/node"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -94,7 +95,7 @@ func parseRequestedNodeActions(args map[string]interface{}) (map[string][]string
 	return requestedMap, nil
 }
 
-func fetchNodeCatalog() ([]map[string]interface{}, error) {
+func fetchNodeCatalog() ([]node.Spec, error) {
 	host := os.Getenv("EKKENAPI_HOST")
 	if host == "" {
 		host = "localhost"
@@ -117,7 +118,7 @@ func fetchNodeCatalog() ([]map[string]interface{}, error) {
 	}
 
 	var rawResp struct {
-		Data []map[string]interface{} `json:"data"`
+		Data []node.Spec `json:"data"`
 	}
 	if err := json.Unmarshal(body, &rawResp); err != nil {
 		return nil, fmt.Errorf("failed to parse catalog: %v", err)
@@ -126,11 +127,11 @@ func fetchNodeCatalog() ([]map[string]interface{}, error) {
 	return rawResp.Data, nil
 }
 
-func filterNodeActions(catalog []map[string]interface{}, requestedMap map[string][]string) []map[string]interface{} {
+func filterNodeActions(catalog []node.Spec, requestedMap map[string][]string) []map[string]interface{} {
 	// Filter only the requested nodes and actions
 	var filtered []map[string]interface{}
-	for _, node := range catalog {
-		nodeType, _ := node["type"].(string)
+	for _, n := range catalog {
+		nodeType := n.Type
 		specificActions, requested := requestedMap[nodeType]
 		if !requested {
 			continue
@@ -140,32 +141,28 @@ func filterNodeActions(catalog []map[string]interface{}, requestedMap map[string
 			"type": nodeType,
 		}
 
-		if globalFields, ok := node["global_fields"].([]interface{}); ok {
-			cleanGlobalFields := cleanNodeFields(globalFields)
-			if len(cleanGlobalFields) > 0 {
-				cleanNode["global_fields"] = cleanGlobalFields
-			}
+		if len(n.GlobalFields) > 0 {
+			cleanNode["global_fields"] = cleanNodeFields(n.GlobalFields)
 		}
 
-		if actions, ok := node["actions"].([]interface{}); ok {
+		if len(n.OutputHandles) > 0 {
+			cleanNode["output_handles"] = n.OutputHandles
+		}
+
+		if len(n.Actions) > 0 {
 			var filteredActions []interface{}
 			filterLookup := make(map[string]bool)
 			for _, k := range specificActions {
 				filterLookup[k] = true
 			}
 
-			for _, a := range actions {
-				action, ok := a.(map[string]interface{})
-				if !ok {
-					continue
-				}
-
-				actionType, _ := action["type"].(string)
+			for _, a := range n.Actions {
+				actionType := a.Type
 				if len(specificActions) > 0 && !filterLookup[actionType] {
 					continue
 				}
 
-				filteredActions = append(filteredActions, cleanNodeAction(action, actionType))
+				filteredActions = append(filteredActions, cleanNodeAction(a))
 			}
 			if len(filteredActions) > 0 {
 				cleanNode["actions"] = filteredActions
@@ -180,47 +177,39 @@ func filterNodeActions(catalog []map[string]interface{}, requestedMap map[string
 	return filtered
 }
 
-func cleanNodeAction(action map[string]interface{}, actionType string) map[string]interface{} {
+func cleanNodeAction(action node.Action) map[string]interface{} {
 	cleanAction := map[string]interface{}{
-		"type": actionType,
+		"type": action.Type,
 	}
 
-	if desc, ok := action["description"].(string); ok && desc != "" {
-		cleanAction["description"] = desc
+	if action.Description != "" {
+		cleanAction["description"] = action.Description
 	}
-	if hr, ok := action["has_response"].(bool); ok && hr {
+	if action.HasResponse {
 		cleanAction["has_response"] = true
-		if rv, ok := action["response_var"].(string); ok && rv != "" {
-			cleanAction["response_var"] = rv
+		if action.ResponseVar != "" {
+			cleanAction["response_var"] = action.ResponseVar
 		}
 	}
-	if fields, ok := action["fields"].([]interface{}); ok {
-		cleanFields := cleanNodeFields(fields)
-		if len(cleanFields) > 0 {
-			cleanAction["fields"] = cleanFields
-		}
+	if len(action.Fields) > 0 {
+		cleanAction["fields"] = cleanNodeFields(action.Fields)
 	}
 
 	return cleanAction
 }
 
-func cleanNodeFields(fields []interface{}) []interface{} {
+func cleanNodeFields(fields []node.NodeField) []interface{} {
 	var cleanFields []interface{}
 	for _, field := range fields {
-		fieldMap, ok := field.(map[string]interface{})
-		if !ok {
-			continue
-		}
-
 		cleanField := map[string]interface{}{
-			"key":  fieldMap["key"],
-			"type": fieldMap["type"],
+			"key":  field.Key,
+			"type": field.Type,
 		}
-		if req, ok := fieldMap["required"].(bool); ok && req {
+		if field.Required {
 			cleanField["required"] = true
 		}
-		if def, ok := fieldMap["default"]; ok && def != nil {
-			cleanField["default"] = def
+		if field.Default != nil {
+			cleanField["default"] = field.Default
 		}
 
 		cleanFields = append(cleanFields, cleanField)
