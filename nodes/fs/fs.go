@@ -1,11 +1,15 @@
 package fs
 
 import (
-	"ekken/internal/features/workflow/node"
+	"encoding/base64"
+	"encoding/hex"
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"ekken/internal/features/workflow/node"
 )
 
 type FSNode struct {
@@ -43,18 +47,31 @@ func init() {
 							Type:  "string",
 							Label: "Content to write",
 						},
+						{
+							Key:     "encoding",
+							Type:    "string",
+							Default: "text",
+							Label:   "Encoding",
+							Options: []map[string]string{
+								{"label": "Text", "value": "text"},
+								{"label": "Base64", "value": "base64"},
+								{"label": "Hex", "value": "hex"},
+								{"label": "Data URL", "value": "data_url"},
+							},
+						},
 					},
 					AutoLayout: [][]node.AutoLayout{
 						{
 							{
 								Key:       "path",
 								Component: "input",
-								Flex:      24,
+								Flex:      16,
 								Options: map[string]any{
 									"native_file_picker":           true,
 									"native_file_picker_directory": true,
 								},
 							},
+							{Key: "encoding", Component: "select", Flex: 8},
 						},
 						{{Key: "content", Component: "textarea", Flex: 24}},
 					},
@@ -77,18 +94,31 @@ func init() {
 							Type:  "string",
 							Label: "Content to append",
 						},
+						{
+							Key:     "encoding",
+							Type:    "string",
+							Default: "text",
+							Label:   "Encoding",
+							Options: []map[string]string{
+								{"label": "Text", "value": "text"},
+								{"label": "Base64", "value": "base64"},
+								{"label": "Hex", "value": "hex"},
+								{"label": "Data URL", "value": "data_url"},
+							},
+						},
 					},
 					AutoLayout: [][]node.AutoLayout{
 						{
 							{
 								Key:       "path",
 								Component: "input",
-								Flex:      24,
+								Flex:      16,
 								Options: map[string]any{
 									"native_file_picker":           true,
 									"native_file_picker_directory": true,
 								},
 							},
+							{Key: "encoding", Component: "select", Flex: 8},
 						},
 						{{Key: "content", Component: "textarea", Flex: 24}},
 					},
@@ -123,10 +153,7 @@ func init() {
 					},
 				},
 			},
-			Outputs: []node.HandleEdge{
-				{Key: "success", Label: "Success", Tone: "success"},
-				{Key: "error", Label: "Error", Tone: "error"},
-			},
+			OutputHandles: []string{"success", "error"},
 		},
 		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &FSNode{Action: action}
@@ -154,6 +181,7 @@ func (n *FSNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error
 func (n *FSNode) executeWrite(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
 	pathRaw, _ := node.FieldValue(n.Action, "path").(string)
 	contentRaw, _ := node.FieldValue(n.Action, "content").(string)
+	encoding, _ := node.FieldValue(n.Action, "encoding").(string)
 
 	if pathRaw == "" {
 		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("file path is required")
@@ -161,13 +189,17 @@ func (n *FSNode) executeWrite(ctx *node.NodeContext) (node.NodeExecutionResult, 
 
 	path := node.ParseTemplate(pathRaw, ctx.Variables)
 	content := node.ParseTemplate(contentRaw, ctx.Variables)
+	data, err := decodeContent(content, encoding)
+	if err != nil {
+		return node.NodeExecutionResult{Handle: "error"}, err
+	}
 
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("failed to create directory: %v", err)
 	}
 
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	if err := os.WriteFile(path, data, 0644); err != nil {
 		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("failed to write file: %v", err)
 	}
 
@@ -182,6 +214,7 @@ func (n *FSNode) executeWrite(ctx *node.NodeContext) (node.NodeExecutionResult, 
 func (n *FSNode) executeAppend(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
 	pathRaw, _ := node.FieldValue(n.Action, "path").(string)
 	contentRaw, _ := node.FieldValue(n.Action, "content").(string)
+	encoding, _ := node.FieldValue(n.Action, "encoding").(string)
 
 	if pathRaw == "" {
 		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("file path is required")
@@ -189,6 +222,10 @@ func (n *FSNode) executeAppend(ctx *node.NodeContext) (node.NodeExecutionResult,
 
 	path := node.ParseTemplate(pathRaw, ctx.Variables)
 	content := node.ParseTemplate(contentRaw, ctx.Variables)
+	data, err := decodeContent(content, encoding)
+	if err != nil {
+		return node.NodeExecutionResult{Handle: "error"}, err
+	}
 
 	dir := filepath.Dir(path)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -201,7 +238,7 @@ func (n *FSNode) executeAppend(ctx *node.NodeContext) (node.NodeExecutionResult,
 	}
 	defer f.Close()
 
-	if _, err := f.WriteString(content); err != nil {
+	if _, err := f.Write(data); err != nil {
 		return node.NodeExecutionResult{Handle: "error"}, fmt.Errorf("failed to append file: %v", err)
 	}
 
@@ -211,6 +248,75 @@ func (n *FSNode) executeAppend(ctx *node.NodeContext) (node.NodeExecutionResult,
 		Response: fmt.Sprintf("Successfully appended to: %s", detail),
 		Type:     &node.NodeResponseType{Mime: "text/plain", Charset: "utf-8"},
 	}, nil
+}
+
+func decodeContent(content, encoding string) ([]byte, error) {
+	switch strings.ToLower(strings.TrimSpace(encoding)) {
+	case "", "text", "plain":
+		return []byte(content), nil
+	case "base64":
+		if strings.HasPrefix(strings.TrimSpace(content), "data:") {
+			return decodeDataURL(content)
+		}
+		return decodeBase64(content)
+	case "hex":
+		decoded, err := hex.DecodeString(compactEncodedContent(content))
+		if err != nil {
+			return nil, fmt.Errorf("failed to decode hex content: %v", err)
+		}
+		return decoded, nil
+	case "data_url":
+		return decodeDataURL(content)
+	default:
+		return nil, fmt.Errorf("unsupported encoding: %s", encoding)
+	}
+}
+
+func decodeBase64(content string) ([]byte, error) {
+	value := compactEncodedContent(content)
+	encodings := []*base64.Encoding{
+		base64.StdEncoding,
+		base64.RawStdEncoding,
+		base64.URLEncoding,
+		base64.RawURLEncoding,
+	}
+	for _, enc := range encodings {
+		if decoded, err := enc.DecodeString(value); err == nil {
+			return decoded, nil
+		}
+	}
+	return nil, fmt.Errorf("failed to decode base64 content")
+}
+
+func decodeDataURL(content string) ([]byte, error) {
+	value := strings.TrimSpace(content)
+	if !strings.HasPrefix(value, "data:") {
+		return nil, fmt.Errorf("data_url content must start with data:")
+	}
+
+	parts := strings.SplitN(value, ",", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid data_url content")
+	}
+
+	if strings.Contains(strings.ToLower(parts[0]), ";base64") {
+		return decodeBase64(parts[1])
+	}
+
+	decoded, err := url.PathUnescape(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode data_url content: %v", err)
+	}
+	return []byte(decoded), nil
+}
+
+func compactEncodedContent(content string) string {
+	return strings.Map(func(r rune) rune {
+		if r == ' ' || r == '\n' || r == '\r' || r == '\t' {
+			return -1
+		}
+		return r
+	}, strings.TrimSpace(content))
 }
 
 func (n *FSNode) executeDelete(ctx *node.NodeContext) (node.NodeExecutionResult, error) {

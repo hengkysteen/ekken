@@ -145,7 +145,7 @@ func (e *Runner) executeGraph(wf Workflow, ctx *node.RunnerContext, iteration in
 			break
 		}
 
-		handle, response, err := e.executeSingleNode(wf.ID, nodeDef, ctx, iteration)
+		handle, response, responseType, err := e.executeSingleNode(wf.ID, nodeDef, ctx, iteration)
 		if err != nil {
 			if errors.Is(err, node.ErrNodeStopped) {
 				e.logInfo(wf.ID, "[Node] %s: Stopped by user", nodeDef.Label)
@@ -170,7 +170,7 @@ func (e *Runner) executeGraph(wf Workflow, ctx *node.RunnerContext, iteration in
 				e.logInfo(wf.ID, "[Recovery] Node '%s' error. Following recovery edge to '%s'.", nodeDef.Label, nextLabel)
 				e.updateStatus(wf.ID, iteration, "running")
 				ctx.OutputHandle = "error"
-				e.saveNodeOutput(wf.ID, nodeDef, ctx.NodeContext, err.Error())
+				e.saveNodeOutput(wf.ID, nodeDef, ctx.NodeContext, err.Error(), nil)
 				currentID = nextID
 				continue
 			}
@@ -184,7 +184,7 @@ func (e *Runner) executeGraph(wf Workflow, ctx *node.RunnerContext, iteration in
 		}
 
 		ctx.OutputHandle = handle
-		e.saveNodeOutput(wf.ID, nodeDef, ctx.NodeContext, response)
+		e.saveNodeOutput(wf.ID, nodeDef, ctx.NodeContext, response, responseType)
 
 		key := currentID + ":" + handle
 		nextID, hasEdge := edgeMap[key]
@@ -206,7 +206,7 @@ func (e *Runner) executeGraph(wf Workflow, ctx *node.RunnerContext, iteration in
 	return nil
 }
 
-func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.RunnerContext, iteration int) (string, interface{}, error) {
+func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.RunnerContext, iteration int) (string, interface{}, *node.NodeResponseType, error) {
 	nodeType := nodeDef.Type
 
 	spec, hasSpec := e.registry.GetSpec(nodeType)
@@ -222,7 +222,7 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 	if len(allDeps) > 0 {
 		if err := node.GlobalTracker.CheckDependsOn(wfID, allDeps); err != nil {
 			e.logError(wfID, "Dependency check failed for node %s (%s): %v", nodeDef.ID, nodeType, err)
-			return "error", nil, err
+			return "error", nil, nil, err
 		}
 	}
 
@@ -242,7 +242,7 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 
 	executor := e.registry.GetExecutor(nodeDef.Type, nodeDef.Action)
 	if executor == nil {
-		return "", nil, fmt.Errorf("unknown node type: %s", nodeDef.Type)
+		return "", nil, nil, fmt.Errorf("unknown node type: %s", nodeDef.Type)
 	}
 
 	retryCount := 0
@@ -261,7 +261,7 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 			e.updateStatus(wfID, iteration, fmt.Sprintf("Retry %d", attempt))
 			select {
 			case <-ctx.Context.Done():
-				return "", nil, ctx.Context.Err()
+				return "", nil, nil, ctx.Context.Err()
 			case <-time.After(time.Duration(retryDelay * float64(time.Second))):
 			}
 		}
@@ -278,24 +278,24 @@ func (e *Runner) executeSingleNode(wfID string, nodeDef *node.Node, ctx *node.Ru
 
 			hasResponse := e.checkActionHasResponse(nodeDef.Type, nodeDef.Action.Type)
 			if hasResponse && result.Response != nil && result.Type == nil {
-				return "", nil, fmt.Errorf("node '%s' action '%s': kontrak memiliki response, dan node memberikan response, tetapi response type (Mime/Charset) tidak diatur", nodeDef.Type, nodeDef.Action.Type)
+				return "", nil, nil, fmt.Errorf("node '%s' action '%s': kontrak memiliki response, dan node memberikan response, tetapi response type (Mime/Charset) tidak diatur", nodeDef.Type, nodeDef.Action.Type)
 			}
 
 			e.logInfo(wfID, "[Node] Output handle: %s", handle)
-			return handle, result.Response, nil
+			return handle, result.Response, result.Type, nil
 		}
 		if errors.Is(err, context.Canceled) || errors.Is(err, node.ErrNodeStopped) || errors.Is(err, node.ErrWorkflowComplete) {
-			return "", nil, err
+			return "", nil, nil, err
 		}
 	}
 
 	if err != nil {
 		e.logError(wfID, "Error in Node %s: %v", display, err)
 		e.logInfo(wfID, "[Node] Output handle: error")
-		return "error", err.Error(), err
+		return "error", err.Error(), nil, err
 	}
 
-	return "", nil, nil
+	return "", nil, nil, nil
 }
 
 func getOnErrorAction(nodeDef *node.Node) string {
@@ -308,7 +308,7 @@ func getOnErrorAction(nodeDef *node.Node) string {
 	return "stop"
 }
 
-func (e *Runner) saveNodeOutput(wfID string, nodeDef *node.Node, ctx *node.NodeContext, response interface{}) {
+func (e *Runner) saveNodeOutput(wfID string, nodeDef *node.Node, ctx *node.NodeContext, response interface{}, responseType *node.NodeResponseType) {
 	if nodeDef.Action.ResponseVar == "" || response == nil {
 		return
 	}
@@ -334,8 +334,19 @@ func (e *Runner) saveNodeOutput(wfID string, nodeDef *node.Node, ctx *node.NodeC
 		display = fmt.Sprintf("%s (%s)", label, action)
 	}
 
-	fullVal, _ := json.MarshalIndent(val, "", "  ")
-	e.logRaw(wfID, "debug", fmt.Sprintf("[Node] Response %s variable saved as '%s'", display, varName), string(fullVal))
+	e.logRaw(wfID, "debug", fmt.Sprintf("[Node] Response %s variable saved as '%s'", display, varName), responseLogRaw(val, responseType))
+}
+
+func responseLogRaw(val interface{}, responseType *node.NodeResponseType) string {
+	if responseType != nil && strings.EqualFold(strings.TrimSpace(responseType.Encoding), "base64") {
+		return "BASE64"
+	}
+
+	fullVal, err := json.MarshalIndent(val, "", "  ")
+	if err != nil {
+		return fmt.Sprintf("%v", val)
+	}
+	return string(fullVal)
 }
 
 func checkContextDone(ctx context.Context) error {

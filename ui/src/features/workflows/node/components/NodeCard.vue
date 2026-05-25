@@ -3,12 +3,14 @@
     <NodeContextMenu v-model:show="showMenu" :x="menuX" :y="menuY" :node-type="data.nodeType" :index="props.index"
       :disabled-keys="disabledKeys" @select="handleMenuSelect" />
     <!-- Input Handle -->
-    <Handle v-if="!data.tags?.includes('Trigger')" id="input" type="target" :position="Position.Left"
-      class="handle-input" />
+    <Handle v-if="!data.hide_input_handles" id="input" type="target" :position="Position.Left" class="handle-input" />
     <div class="node-card" @click="handleClick">
       <!-- "MY NODE" Badge -->
       <div v-if="data.sourceType === 'mynodes'" class="mynodes-badge">
         {{ data.name || 'MY NODE' }}
+      </div>
+      <div v-if="data.needsReview" class="version-review-badge">
+        Version mismatch
       </div>
       <div class="node-header">
         <div class="icon-wrapper">
@@ -29,9 +31,9 @@
       </div>
     </div>
     <!-- Output Handles -->
-    <Handle v-for="(output) in data.outputs" :key="output.key" :id="output.key" type="source"
-      :position="output.tone === 'error' ? Position.Bottom : Position.Right" :style="getOutputHandleStyle(output)"
-      :class="['handle-output', output.tone || 'success']" @click.stop="onAddNode(output.key)">
+    <Handle v-for="handleId in data.output_handles" :key="handleId" :id="handleId" type="source"
+      :position="handleId === 'error' ? Position.Bottom : Position.Right" :style="getOutputHandleStyle(handleId)"
+      :class="['handle-output', getOutputTone(handleId)]" @click.stop="onAddNode(handleId)">
       <el-icon class="handle-add-icon">
         <Plus />
       </el-icon>
@@ -75,11 +77,18 @@ const iconStyle = computed(() => ({
 const disabledKeys = computed(() => {
   return []
 })
-const getOutputHandleStyle = (output: any) => {
-  if (output.tone === 'error') return {}
-  const validOutputs = props.data.outputs.filter((o: any) => o.tone !== 'error')
-  const index = validOutputs.findIndex((o: any) => o.key === output.key)
-  const count = validOutputs.length
+const getOutputTone = (handleId: string) => {
+  if (handleId === 'error') return 'error'
+  if (handleId === 'success') return 'success'
+  if (handleId === 'true') return 'true'
+  if (handleId === 'false') return 'false'
+  return 'neutral'
+}
+const getOutputHandleStyle = (handleId: string) => {
+  if (handleId === 'error') return {}
+  const validOutputHandles = (props.data.output_handles || []).filter((h: string) => h !== 'error')
+  const index = validOutputHandles.findIndex((h: string) => h === handleId)
+  const count = validOutputHandles.length
   if (count === 1) return { top: '50%' }
   const spacing = 100 / (count + 1)
   return { top: `${(index + 1) * spacing}%` }
@@ -326,5 +335,17 @@ const onAddNode = (handleType: string) => emit('add-node', { id: props.id, handl
   font-weight: 900;
   padding: 2px 6px;
   border-radius: 0 0 0 10px;
+}
+
+.version-review-badge {
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  background: var(--el-color-warning);
+  color: white;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 2px 6px;
+  border-radius: 0 0 10px 0;
 }
 </style>

@@ -57,6 +57,12 @@ export interface AutoLayout {
   options?: any
 }
 
+export interface NodeResponseType {
+  mime?: string
+  charset?: string
+  encoding?: string
+}
+
 /**
  * Action variant with its own set of fields.
  * Used for nodes that have different configuration schemas based on the action.
@@ -82,6 +88,9 @@ export interface NodeAction {
 
   /** Whether this action produces a response that can be used in the workflow */
   has_response: boolean
+
+  /** Response type details from backend spec */
+  response_type?: NodeResponseType
 }
 
 /**
@@ -113,11 +122,23 @@ export interface NodeMetadata {
   /** Specification version for this node */
   version?: string
 
+  /** Supported platforms using Go runtime.GOOS values. Empty means all platforms. */
+  platforms?: string[]
+
+  /** Version currently installed in the local node catalog. UI-only. */
+  installedVersion?: string
+
+  /** True when saved node data version differs from installed catalog version. UI-only. */
+  needsReview?: boolean
+
   /** Categorization tags for organizing nodes in the UI */
   tags?: string[]
 
   /** Human-readable label for this node */
   label: string
+
+  /** Detailed description of what this node does */
+  description?: string
 
   /** Icon URL or identifier for visual representation */
   icon?: string
@@ -141,8 +162,11 @@ export interface NodeDefinition extends NodeMetadata {
   /** Default action when using Actions pattern */
   default_action?: string
 
-  /** Output handles for routing workflow execution */
-  outputs: HandleEdge[]
+  /** Output handles from backend spec */
+  output_handles: string[]
+
+  /** Hide the target/input handle for start-only nodes */
+  hide_input_handles?: boolean
 }
 
 /**
@@ -160,6 +184,12 @@ export interface WorkflowNode extends NodeMetadata {
 
   /** Custom name (if this is a mynode) */
   name?: string
+
+  /** Output handles available for this node instance. UI-derived from catalog. */
+  output_handles?: string[]
+
+  /** Hide the target/input handle. UI-derived from catalog. */
+  hide_input_handles?: boolean
 
   /** Position in the visual editor */
   position?: { x: number; y: number }

@@ -1,10 +1,12 @@
 package fs
 
 import (
-	"ekken/internal/features/workflow/node"
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"ekken/internal/features/workflow/node"
 )
 
 func TestFSNode_ExecuteWrite(t *testing.T) {
@@ -20,7 +22,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write simple content",
 			config: map[string]any{
-				"type":  "write",
+				"type":    "write",
 				"path":    "testdata/write_simple.txt",
 				"content": "hello world",
 			},
@@ -39,7 +41,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write with template variable",
 			config: map[string]any{
-				"type":  "write",
+				"type":    "write",
 				"path":    "testdata/write_template.txt",
 				"content": "{{message}}",
 			},
@@ -58,7 +60,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write with explicit variable",
 			config: map[string]any{
-				"type":  "write",
+				"type":    "write",
 				"path":    "testdata/write_output.txt",
 				"content": "{{my_data}}",
 			},
@@ -77,7 +79,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write creates nested directories",
 			config: map[string]any{
-				"type":  "write",
+				"type":    "write",
 				"path":    "testdata/nested/deep/file.txt",
 				"content": "nested content",
 			},
@@ -96,7 +98,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write overwrites existing file",
 			config: map[string]any{
-				"type":  "write",
+				"type":    "write",
 				"path":    "testdata/overwrite.txt",
 				"content": "new content",
 			},
@@ -115,7 +117,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write empty path",
 			config: map[string]any{
-				"type":  "write",
+				"type":    "write",
 				"path":    "",
 				"content": "content",
 			},
@@ -127,7 +129,7 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 		{
 			name: "write with path template",
 			config: map[string]any{
-				"type":  "write",
+				"type":    "write",
 				"path":    "testdata/{{filename}}.txt",
 				"content": "dynamic path",
 			},
@@ -142,6 +144,82 @@ func TestFSNode_ExecuteWrite(t *testing.T) {
 					t.Errorf("content = %q, want %q", string(content), "dynamic path")
 				}
 			},
+		},
+		{
+			name: "write base64 content",
+			config: map[string]any{
+				"type":     "write",
+				"path":     "testdata/write_base64.bin",
+				"content":  base64.StdEncoding.EncodeToString([]byte{0x89, 0x50, 0x4e, 0x47}),
+				"encoding": "base64",
+			},
+			variables:  map[string]interface{}{},
+			wantHandle: "success",
+			verify: func(t *testing.T, path string) {
+				content, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatalf("failed to read file: %v", err)
+				}
+				want := []byte{0x89, 0x50, 0x4e, 0x47}
+				if string(content) != string(want) {
+					t.Errorf("content = %v, want %v", content, want)
+				}
+			},
+		},
+		{
+			name: "write hex content",
+			config: map[string]any{
+				"type":     "write",
+				"path":     "testdata/write_hex.bin",
+				"content":  "89504e47",
+				"encoding": "hex",
+			},
+			variables:  map[string]interface{}{},
+			wantHandle: "success",
+			verify: func(t *testing.T, path string) {
+				content, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatalf("failed to read file: %v", err)
+				}
+				want := []byte{0x89, 0x50, 0x4e, 0x47}
+				if string(content) != string(want) {
+					t.Errorf("content = %v, want %v", content, want)
+				}
+			},
+		},
+		{
+			name: "write data url content",
+			config: map[string]any{
+				"type":     "write",
+				"path":     "testdata/write_data_url.bin",
+				"content":  "data:image/png;base64,iVBORw==",
+				"encoding": "data_url",
+			},
+			variables:  map[string]interface{}{},
+			wantHandle: "success",
+			verify: func(t *testing.T, path string) {
+				content, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatalf("failed to read file: %v", err)
+				}
+				want := []byte{0x89, 0x50, 0x4e, 0x47}
+				if string(content) != string(want) {
+					t.Errorf("content = %v, want %v", content, want)
+				}
+			},
+		},
+		{
+			name: "write invalid encoding",
+			config: map[string]any{
+				"type":     "write",
+				"path":     "testdata/write_invalid.txt",
+				"content":  "content",
+				"encoding": "unknown",
+			},
+			variables:   map[string]interface{}{},
+			wantHandle:  "error",
+			wantErr:     true,
+			errContains: "unsupported encoding",
 		},
 	}
 
@@ -204,7 +282,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append to existing file",
 			config: map[string]any{
-				"type":  "append",
+				"type":    "append",
 				"path":    "testdata/append_existing.txt",
 				"content": " appended",
 			},
@@ -227,7 +305,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append to non-existing file",
 			config: map[string]any{
-				"type":  "append",
+				"type":    "append",
 				"path":    "testdata/append_new.txt",
 				"content": "first line",
 			},
@@ -246,7 +324,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append multiple times",
 			config: map[string]any{
-				"type":  "append",
+				"type":    "append",
 				"path":    "testdata/append_multiple.txt",
 				"content": "line\n",
 			},
@@ -269,7 +347,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append with template",
 			config: map[string]any{
-				"type":  "append",
+				"type":    "append",
 				"path":    "testdata/append_template.txt",
 				"content": "{{data}}",
 			},
@@ -292,7 +370,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 		{
 			name: "append creates nested directories",
 			config: map[string]any{
-				"type":  "append",
+				"type":    "append",
 				"path":    "testdata/append/nested/file.txt",
 				"content": "content",
 			},
@@ -309,9 +387,34 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 			},
 		},
 		{
+			name: "append base64 content",
+			config: map[string]any{
+				"type":     "append",
+				"path":     "testdata/append_base64.bin",
+				"content":  "UE5H",
+				"encoding": "base64",
+			},
+			variables: map[string]interface{}{},
+			setup: func(t *testing.T, path string) {
+				os.MkdirAll(filepath.Dir(path), 0755)
+				os.WriteFile(path, []byte{0x89}, 0644)
+			},
+			wantHandle: "success",
+			verify: func(t *testing.T, path string) {
+				content, err := os.ReadFile(path)
+				if err != nil {
+					t.Fatalf("failed to read file: %v", err)
+				}
+				want := []byte{0x89, 0x50, 0x4e, 0x47}
+				if string(content) != string(want) {
+					t.Errorf("content = %v, want %v", content, want)
+				}
+			},
+		},
+		{
 			name: "append empty path",
 			config: map[string]any{
-				"type":  "append",
+				"type":    "append",
 				"path":    "",
 				"content": "content",
 			},
@@ -330,7 +433,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 			if pathVal != nil {
 				path = node.ParseTemplate(pathVal.(string), tt.variables)
 			}
-			
+
 			if tt.setup != nil {
 				tt.setup(t, path)
 			}
@@ -378,7 +481,7 @@ func TestFSNode_ExecuteAppend(t *testing.T) {
 func TestFSNode_Stop(t *testing.T) {
 	n := &FSNode{
 		Action: node.ActionFromMap(map[string]any{
-			"type":  "write",
+			"type":    "write",
 			"path":    "testdata/stop.txt",
 			"content": "content",
 		}),
@@ -418,7 +521,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 			name: "delete existing file",
 			config: map[string]any{
 				"type": "delete",
-				"path":   "testdata/delete_file.txt",
+				"path": "testdata/delete_file.txt",
 			},
 			variables: map[string]interface{}{},
 			setup: func(t *testing.T, path string) {
@@ -436,7 +539,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 			name: "delete existing directory",
 			config: map[string]any{
 				"type": "delete",
-				"path":   "testdata/delete_dir",
+				"path": "testdata/delete_dir",
 			},
 			variables: map[string]interface{}{},
 			setup: func(t *testing.T, path string) {
@@ -454,7 +557,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 			name: "delete non-existing path",
 			config: map[string]any{
 				"type": "delete",
-				"path":   "testdata/non_existing",
+				"path": "testdata/non_existing",
 			},
 			variables:  map[string]interface{}{},
 			wantHandle: "success", // RemoveAll returns nil if path doesn't exist
@@ -463,7 +566,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 			name: "delete with template",
 			config: map[string]any{
 				"type": "delete",
-				"path":   "testdata/{{target}}",
+				"path": "testdata/{{target}}",
 			},
 			variables: map[string]interface{}{"target": "delete_me.txt"},
 			setup: func(t *testing.T, path string) {
@@ -481,7 +584,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 			name: "delete empty path",
 			config: map[string]any{
 				"type": "delete",
-				"path":   "",
+				"path": "",
 			},
 			variables:   map[string]interface{}{},
 			wantHandle:  "error",
@@ -492,7 +595,7 @@ func TestFSNode_ExecuteDelete(t *testing.T) {
 			name: "delete multiple paths",
 			config: map[string]any{
 				"type": "delete",
-				"path":   "testdata/f1.txt\ntestdata/f2.txt",
+				"path": "testdata/f1.txt\ntestdata/f2.txt",
 			},
 			variables: map[string]interface{}{},
 			setup: func(t *testing.T, path string) {

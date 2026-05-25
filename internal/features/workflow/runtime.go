@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,8 @@ import (
 	"ekken/internal/features/workflow/node"
 	"ekken/internal/logger"
 )
+
+const maxWorkflowLogs = 500
 
 type RuntimeServicer interface {
 	Running() []WorkflowRunStatus
@@ -89,7 +92,7 @@ type RuntimeService struct {
 	runner    *Runner
 	dataDir   string
 	mu        sync.RWMutex
-	errLogMu  sync.Mutex              // guards global error log file only
+	errLogMu  sync.Mutex                  // guards global error log file only
 	logFiles  map[string]*workflowLogFile // per-workflow buffered writers
 	runs      map[string]*activeRun
 	logs      map[string][]LogEntry // In-memory cache for live runs
@@ -118,7 +121,7 @@ func NewRuntimeService(workflows WorkflowServicer, database RuntimeDatabase, sse
 
 func (s *RuntimeService) OnStatusUpdate(id, status string, iteration int) {
 	if err := s.database.UpdateStatus(id, status, iteration); err != nil {
-		logger.Error("Gagal update status di DB", "id", id, "error", err)
+		logger.Error("Failed to update workflow status in database", "id", id, "error", err)
 	}
 
 	// Try to get name from memory first
@@ -157,8 +160,8 @@ func (s *RuntimeService) OnLog(id, level, message, raw string) {
 	// 1. Update In-Memory Cache (for very fast live access)
 	s.mu.Lock()
 	s.logs[id] = append(s.logs[id], entry)
-	if len(s.logs[id]) > 500 {
-		s.logs[id] = s.logs[id][len(s.logs[id])-500:]
+	if len(s.logs[id]) > maxWorkflowLogs {
+		s.logs[id] = s.logs[id][len(s.logs[id])-maxWorkflowLogs:]
 	}
 	s.mu.Unlock()
 
@@ -368,61 +371,24 @@ func (s *RuntimeService) Logs(id string) []LogEntry {
 	file, err := os.Open(filePath)
 	if err == nil {
 		defer file.Close()
-		var fileLogs []LogEntry
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := scanner.Text()
-			if strings.TrimSpace(line) == "" {
-				continue
-			}
 
-			entry := LogEntry{}
-			// Try to parse as JSON (new format)
-			if err := json.Unmarshal([]byte(line), &entry); err == nil {
-				fileLogs = append(fileLogs, entry)
-				continue
-			}
-
-			// Fallback to old text format parsing for backward compatibility
-			if len(line) < 25 {
-				continue
-			}
-
-			// Extract timestamp: [2026-04-26 13:09:47.763]
-			tStr := line[1:24]
-			t, err := time.ParseInLocation("2006-01-02 15:04:05.000", tStr, time.Local)
-			if err == nil {
-				entry.Time = t
-			}
-
-			if len(line) <= 26 {
-				continue
-			}
-			remaining := line[26:]
-
-			// Extract level: [INFO]
-			if strings.HasPrefix(remaining, "[") {
-				lvlEnd := strings.Index(remaining, "]")
-				if lvlEnd != -1 {
-					entry.Level = strings.ToLower(remaining[1:lvlEnd])
-					if len(remaining) > lvlEnd+2 {
-						msgPart := remaining[lvlEnd+2:]
-						rawIdx := strings.Index(msgPart, " | RAW: ")
-						if rawIdx != -1 {
-							entry.Message = msgPart[:rawIdx]
-							entry.Raw = msgPart[rawIdx+8:]
-						} else {
-							entry.Message = msgPart
-						}
-					}
+		fileLogs := make([]LogEntry, 0, maxWorkflowLogs)
+		reader := bufio.NewReader(file)
+		for {
+			line, readErr := reader.ReadString('\n')
+			if line != "" {
+				if entry, ok := parseWorkflowLogLine(strings.TrimRight(line, "\r\n")); ok {
+					fileLogs = appendLogWindow(fileLogs, entry, maxWorkflowLogs)
 				}
 			}
-			fileLogs = append(fileLogs, entry)
-		}
 
-		// Return last 500 lines
-		if len(fileLogs) > 500 {
-			return fileLogs[len(fileLogs)-500:]
+			if readErr == io.EOF {
+				break
+			}
+			if readErr != nil {
+				logger.Error("Failed to read workflow log file", "id", id, "error", readErr)
+				break
+			}
 		}
 		return fileLogs
 	}
@@ -434,6 +400,66 @@ func (s *RuntimeService) Logs(id string) []LogEntry {
 	out := make([]LogEntry, len(logs))
 	copy(out, logs)
 	return out
+}
+
+func appendLogWindow(logs []LogEntry, entry LogEntry, limit int) []LogEntry {
+	if limit <= 0 {
+		return logs
+	}
+	if len(logs) < limit {
+		return append(logs, entry)
+	}
+	copy(logs, logs[1:])
+	logs[len(logs)-1] = entry
+	return logs
+}
+
+func parseWorkflowLogLine(line string) (LogEntry, bool) {
+	if strings.TrimSpace(line) == "" {
+		return LogEntry{}, false
+	}
+
+	entry := LogEntry{}
+	// Try to parse as JSON (new format)
+	if err := json.Unmarshal([]byte(line), &entry); err == nil {
+		return entry, true
+	}
+
+	// Fallback to old text format parsing for backward compatibility
+	if len(line) < 25 {
+		return LogEntry{}, false
+	}
+
+	// Extract timestamp: [2026-04-26 13:09:47.763]
+	tStr := line[1:24]
+	t, err := time.ParseInLocation("2006-01-02 15:04:05.000", tStr, time.Local)
+	if err == nil {
+		entry.Time = t
+	}
+
+	if len(line) <= 26 {
+		return LogEntry{}, false
+	}
+	remaining := line[26:]
+
+	// Extract level: [INFO]
+	if strings.HasPrefix(remaining, "[") {
+		lvlEnd := strings.Index(remaining, "]")
+		if lvlEnd != -1 {
+			entry.Level = strings.ToLower(remaining[1:lvlEnd])
+			if len(remaining) > lvlEnd+2 {
+				msgPart := remaining[lvlEnd+2:]
+				rawIdx := strings.Index(msgPart, " | RAW: ")
+				if rawIdx != -1 {
+					entry.Message = msgPart[:rawIdx]
+					entry.Raw = msgPart[rawIdx+8:]
+				} else {
+					entry.Message = msgPart
+				}
+			}
+		}
+	}
+	return entry, true
 }
 
 func (s *RuntimeService) DeleteLogs(id string) error {

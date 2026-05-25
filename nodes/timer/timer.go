@@ -105,7 +105,8 @@ func init() {
 				},
 			},
 
-			Outputs: []node.HandleEdge{{Key: "success", Label: "Success", Tone: "success"}},
+			OutputHandles:   []string{"success"},
+			HideInputHandle: true,
 		},
 		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &TimerNode{action: action}

@@ -229,6 +229,22 @@ func TestRunner_SaveAs(t *testing.T) {
 	}
 }
 
+func TestResponseLogRawBase64(t *testing.T) {
+	raw := responseLogRaw("long-base64-payload", &node.NodeResponseType{Mime: "image/png", Encoding: "base64"})
+
+	if raw != "BASE64" {
+		t.Fatalf("raw = %q, want BASE64", raw)
+	}
+}
+
+func TestResponseLogRawPlainText(t *testing.T) {
+	raw := responseLogRaw("debug text", &node.NodeResponseType{Mime: "text/plain", Charset: "utf-8"})
+
+	if raw != `"debug text"` {
+		t.Fatalf("raw = %q, want quoted debug text", raw)
+	}
+}
+
 func TestRunner_Cancellation(t *testing.T) {
 	reg := &MockRegistry{
 		Executors: map[string]node.NodeExecutor{

@@ -31,6 +31,16 @@
       </el-form-item>
 
       <template v-if="localAction">
+        <div v-if="isWebhookNode" class="webhook-url-panel">
+          <el-form-item label="Local URL">
+            <el-input :model-value="webhookLocalUrl" readonly>
+              <template #append>
+                <el-button :icon="Refresh" @click="regenerateWebhookID" />
+                <el-button :icon="CopyDocument" @click="copyWebhookLocalUrl" />
+              </template>
+            </el-input>
+          </el-form-item>
+        </div>
         <EkDynamicForm 
           :layout="(actionBlueprint?.auto_layout || []) as any" 
           :fields="hydratedAction.fields"
@@ -46,6 +56,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { CopyDocument, Refresh } from '@element-plus/icons-vue'
 import { useNodeStore } from '@workflows/node/stores/node'
 import {
   buildActionInstance,
@@ -59,11 +71,16 @@ import EkNodeNotFound from './EkNodeNotFound.vue'
 import type { NodeFormProps, NodeDefinition } from '@workflows/node/types/node'
 
 const props = defineProps<NodeFormProps>()
+const emit = defineEmits(['action-change'])
 const nodeStore = useNodeStore()
 
 const currentActionType = ref('')
 const localAction = ref<any>(null)
 const localGlobalFields = ref<any[]>([])
+
+watch(localAction, (newAction) => {
+  emit('action-change', newAction)
+}, { deep: true, immediate: true })
 
 const catalog = computed(() => nodeStore.catalog)
 const actionOptions = computed(() => {
@@ -82,6 +99,13 @@ const nodeDef = computed(() => {
 const actionBlueprint = computed(() => getActionBlueprint(nodeDef.value, currentActionType.value))
 const currentActionDescription = computed(() => actionBlueprint.value?.description || '')
 const hydratedAction = computed(() => hydrateActionForForm(localAction.value, nodeDef.value, currentActionType.value))
+const isWebhookNode = computed(() => nodeDef.value?.type === 'webhook')
+const webhookID = computed(() => getLocalFieldValue('webhook_id'))
+const webhookLocalUrl = computed(() => {
+  const id = webhookID.value
+  if (!id) return ''
+  return `${window.location.origin}/api/webhook/${id}`
+})
 
 // Handle action switching
 watch(currentActionType, (newType) => {
@@ -125,6 +149,10 @@ onMounted(() => {
     currentActionType.value = localAction.value.type
     localGlobalFields.value = hydrateFieldsForForm(nodeDef.value.global_fields)
   }
+
+  if (isWebhookNode.value && !getLocalFieldValue('webhook_id')) {
+    handleFieldUpdate('webhook_id', generateWebhookID())
+  }
 })
 
 function handleFieldUpdate(key: string, value: any) {
@@ -134,6 +162,33 @@ function handleFieldUpdate(key: string, value: any) {
     field.value = value
   } else {
     localAction.value.fields.push({ key, value })
+  }
+}
+
+function getLocalFieldValue(key: string): any {
+  return localAction.value?.fields?.find((f: any) => f.key === key)?.value
+}
+
+function generateWebhookID(): string {
+  const bytes = new Uint8Array(8)
+  if (window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(bytes)
+    return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
+  }
+  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`
+}
+
+function regenerateWebhookID() {
+  handleFieldUpdate('webhook_id', generateWebhookID())
+}
+
+async function copyWebhookLocalUrl() {
+  if (!webhookLocalUrl.value) return
+  try {
+    await navigator.clipboard.writeText(webhookLocalUrl.value)
+    ElMessage.success('Copied')
+  } catch {
+    ElMessage.error('Copy failed')
   }
 }
 
@@ -166,5 +221,9 @@ defineExpose({ getData })
 .advanced-collapse {
   margin-top: 20px;
   border-top: 1px solid var(--el-border-color-lighter);
+}
+
+.webhook-url-panel {
+  margin-bottom: 16px;
 }
 </style>

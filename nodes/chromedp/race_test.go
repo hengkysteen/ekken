@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// TestConcurrentMetadataAccess mencoba membuktikan apakah ada data race
-// saat multiple browser nodes mengakses ctx.Metadata secara bersamaan
+// TestConcurrentMetadataAccess checks whether ctx.Metadata has a data race
+// when multiple browser nodes access it concurrently.
 func TestConcurrentMetadataAccess(t *testing.T) {
-	// Setup shared NodeContext (seperti di workflow yang sama)
+	// Set up a shared NodeContext, like nodes in the same workflow.
 	ctx := &node.NodeContext{
 		Context:   context.Background(),
 		Variables: make(map[string]interface{}),
@@ -18,8 +18,8 @@ func TestConcurrentMetadataAccess(t *testing.T) {
 		OnCleanup: make([]func(), 0),
 	}
 
-	// Simulasi 10 browser nodes berjalan concurrent
-	// (misal: workflow dengan banyak tab browser yang dibuka bersamaan)
+	// Simulate 10 browser nodes running concurrently,
+	// such as a workflow that opens many browser tabs at the same time.
 	var wg sync.WaitGroup
 	numNodes := 10
 
@@ -28,19 +28,19 @@ func TestConcurrentMetadataAccess(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 
-			// Setiap goroutine mencoba akses Metadata
+			// Each goroutine attempts to access Metadata.
 			browserNode := &BrowserNode{
 				Action: node.ActionFromMap(map[string]interface{}{
 					"type": "navigate",
-					"url":    "https://example.com",
+					"url":  "https://example.com",
 				}),
 			}
 
-			// Ini akan trigger getOrCreateTab yang akses ctx.Metadata
+			// This triggers getOrCreateTab, which accesses ctx.Metadata.
 			_, _ = browserNode.getOrCreateTab(ctx)
 		}(i)
 	}
 
 	wg.Wait()
-	t.Log("Test selesai tanpa panic")
+	t.Log("Test completed without panic")
 }

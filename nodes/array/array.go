@@ -82,10 +82,7 @@ func init() {
 					},
 				},
 			},
-			Outputs: []node.HandleEdge{
-				{Key: "success", Label: "Success", Tone: "success"},
-				{Key: "error", Label: "Error", Tone: "error"},
-			},
+			OutputHandles: []string{"success", "error"},
 		},
 		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &ArrayNode{Action: action}

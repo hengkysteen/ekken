@@ -73,17 +73,17 @@ func init() {
 					},
 				},
 				{
-					Type:        "screenshot",
-					Label:       "Screenshot",
-					Description: "Take a screenshot of the page",
+					Type:         "screenshot",
+					Label:        "Screenshot",
+					Description:  "Take a screenshot of the page",
+					HasResponse:  true,
+					ResponseType: &node.NodeResponseType{Mime: "image/png", Encoding: "base64"},
 					Fields: []node.NodeField{
-						{Key: "path", Type: "string", Required: true, Label: "Output Path"},
 						{Key: "full_page", Type: "boolean", Default: false, Label: "Full Page"},
 					},
 					AutoLayout: [][]node.AutoLayout{
 						{
-							{Key: "path", Component: "input", Flex: 18, Options: map[string]any{"placeholder": "/path/to/screenshot.png"}},
-							{Key: "full_page", Component: "switch", Flex: 6, Options: map[string]any{"helper": "Capture full scrollable page"}},
+							{Key: "full_page", Component: "switch", Flex: 24, Options: map[string]any{"helper": "Capture full scrollable page"}},
 						},
 					},
 				},
@@ -116,10 +116,7 @@ func init() {
 				{Key: "timeout", Type: "number", Default: 60, Label: "Timeout (sec)"},
 				{Key: "retry_count", Type: "number", Default: 0, Label: "Retry Count"},
 			},
-			Outputs: []node.HandleEdge{
-				{Key: "success", Label: "Success", Tone: "success"},
-				{Key: "error", Label: "Error", Tone: "error"},
-			},
+			OutputHandles: []string{"success", "error"},
 		},
 		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &BrowserNode{Action: action}
@@ -211,7 +208,7 @@ func (n *BrowserNode) isTabHealthy(tabCtx context.Context) bool {
 }
 
 func (n *BrowserNode) createTab() (*Session, error) {
-	// Gunakan AllocatorCtx jika ada, jika tidak fallback ke GlobalAllocCtx agar tidak error
+	// Use AllocatorCtx when present, otherwise fall back to GlobalAllocCtx.
 	allocCtx := n.AllocatorCtx
 	if allocCtx == nil {
 		allocCtx = chrome.GlobalAllocCtx
@@ -221,7 +218,7 @@ func (n *BrowserNode) createTab() (*Session, error) {
 		return nil, fmt.Errorf("failed to ensure browser: %w", err)
 	}
 
-	// Double check setelah EnsureBrowser karena GlobalAllocCtx baru terisi di sana
+	// Check again after EnsureBrowser because GlobalAllocCtx may be initialized there.
 	if allocCtx == nil {
 		allocCtx = chrome.GlobalAllocCtx
 	}
@@ -260,7 +257,7 @@ func (n *BrowserNode) runAction(ctx *node.NodeContext, tabCtx context.Context, a
 	case "click":
 		return n.click(ctx, tabCtx)
 	case "screenshot":
-		return n.screenshot(ctx, tabCtx)
+		return n.screenshot(tabCtx)
 	case "input":
 		return n.input(ctx, tabCtx)
 	default:

@@ -66,10 +66,7 @@ func init() {
 				{Key: "timeout", Type: "number", Default: 60, Label: "Timeout (sec)"},
 				{Key: "retry_count", Type: "number", Default: 0, Label: "Retry Count"},
 			},
-			Outputs: []node.HandleEdge{
-				{Key: "success", Label: "Success", Tone: "success"},
-				{Key: "error", Label: "Error", Tone: "error"},
-			},
+			OutputHandles: []string{"success", "error"},
 		},
 		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &HTTPNode{Action: action}

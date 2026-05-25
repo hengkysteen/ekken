@@ -181,7 +181,7 @@ export function validateOutputHandle(
   handle: string,
   schema: NodeDefinition
 ): boolean {
-  return schema.outputs.some(output => output.key === handle)
+  return (schema.output_handles || []).includes(handle)
 }
 
 /**
@@ -191,5 +191,5 @@ export function validateOutputHandle(
  * @returns Array of valid handle keys
  */
 export function getValidOutputHandles(schema: NodeDefinition): string[] {
-  return schema.outputs.map(output => output.key)
+  return schema.output_handles || []
 }

@@ -69,7 +69,7 @@ import '@vue-flow/minimap/dist/style.css'
 
 import TriggerOverlay from '@workflows/workflow/components/TriggerOverlay.vue'
 import NodePicker from '@workflows/node/components/NodePicker.vue'
-import BaseNodeForm from '@workflows/node/nodes/common/BaseNodeForm.vue'
+import BaseNodeForm from '@workflows/node/components/BaseNodeForm.vue'
 import { useWorkflowEditorStore } from '@workflows/workflow/stores/workflowEditor'
 import { useMyNodeStore } from '@workflows/mynode/stores/mynode'
 import { useNodeStore } from '@workflows/node/stores/node'

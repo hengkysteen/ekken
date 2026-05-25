@@ -60,7 +60,7 @@ func (m *Manager) Load() error {
 
 		m.plugins[pluginID] = plugin
 
-		// Hanya registrasi jika statusnya ENABLED di state
+		// Register only when the plugin is enabled in state.
 		entry, exists := state.Plugins[pluginID]
 		isEnabled := !exists || entry.Enabled
 
@@ -80,7 +80,7 @@ func (m *Manager) Load() error {
 			m.plugins[pluginID] = plugin
 		}
 
-		// Update state jika belum ada
+		// Initialize state if this plugin has no entry yet.
 		if !exists {
 			if state.Plugins == nil {
 				state.Plugins = make(map[string]PluginStateEntry)

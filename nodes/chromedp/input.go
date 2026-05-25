@@ -20,7 +20,7 @@ func (n *BrowserNode) input(ctx *node.NodeContext, tabCtx context.Context) (node
 	}
 	valueRaw, _ := node.FieldValue(n.Action, "value").(string)
 	value := node.ParseTemplate(valueRaw, ctx.Variables)
-	logger.DevPrintf("[Browser] Mengetik ke %s (panjang: %d)\n", selector, len(value))
+	logger.DevPrintf("[Browser] Typing into %s (length: %d)\n", selector, len(value))
 
 	err = n.humanType(tabCtx, selector, queryOpt, value)
 	if err != nil {
@@ -30,7 +30,7 @@ func (n *BrowserNode) input(ctx *node.NodeContext, tabCtx context.Context) (node
 }
 
 func (n *BrowserNode) humanType(tabCtx context.Context, selector string, queryOpt chromedp.QueryOption, text string) error {
-	// 1. Pastikan element siap, terlihat, dan terfokus
+	// 1. Ensure the element is ready, visible, and focused.
 	err := chromedp.Run(tabCtx,
 		chromedp.WaitReady(selector, queryOpt),
 		chromedp.ScrollIntoView(selector, queryOpt),
@@ -41,8 +41,7 @@ func (n *BrowserNode) humanType(tabCtx context.Context, selector string, queryOp
 		return fmt.Errorf("failed to focus element: %w", err)
 	}
 
-	// 2. Bersihkan field via JS (lebih andal daripada document.activeElement)
-	// Ganti bagian clearJS menjadi ini:
+	// 2. Clear the field via JS, which is more reliable than document.activeElement.
 	clearJS := fmt.Sprintf(`(function() {
     var el = document.querySelector(%q);
     if (el) {
@@ -56,7 +55,7 @@ func (n *BrowserNode) humanType(tabCtx context.Context, selector string, queryOp
 		logger.DevPrintf("[Browser] Failed to clear field: %v (continuing)\n", err)
 	}
 
-	// 3. Susun semua aksi mengetik dalam satu slice
+	// 3. Build all typing actions in one slice.
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	var actions []chromedp.Action
 
@@ -84,13 +83,13 @@ func (n *BrowserNode) humanType(tabCtx context.Context, selector string, queryOp
 		actions = append(actions, chromedp.Sleep(delay))
 	}
 
-	// 4. Eksekusi SELURUH aksi dalam SATU transaksi CDP
-	// Ini mencegah kehilangan fokus, throttling background, dan race condition
+	// 4. Execute all actions in one CDP transaction.
+	// This prevents focus loss, background throttling, and race conditions.
 	if err := chromedp.Run(tabCtx, actions...); err != nil {
 		return fmt.Errorf("typing simulation failed: %w", err)
 	}
 
-	// 5. Tekan Enter jika dikonfigurasi
+	// 5. Press Enter if configured.
 	if pressEnter, ok := node.FieldValue(n.Action, "press_enter").(bool); ok && pressEnter {
 		time.Sleep(200 * time.Millisecond)
 		if err := chromedp.Run(tabCtx, chromedp.SendKeys(selector, kb.Enter, queryOpt)); err != nil {

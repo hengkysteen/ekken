@@ -16,6 +16,7 @@ export function buildSavePayload(
   const nodes: WorkflowNode[] = flowNodes.map((n) => ({
     id: n.id,
     type: n.data.nodeType || n.type,
+    version: n.data.version || undefined,
     label: n.data.label,
     action: serializeActionForSave(n.data.action),
   }))
@@ -48,6 +49,7 @@ export function sanitizeWorkflowPayload(workflow: Workflow): Workflow {
     nodes: (workflow.nodes || []).map((n: any) => ({
       id: n.id,
       type: n.type,
+      version: n.version || undefined,
       label: n.label,
       action: serializeActionForSave(n.action),
     })),

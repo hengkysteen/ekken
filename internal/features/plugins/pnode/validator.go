@@ -76,7 +76,7 @@ func validateNodeSpec(nodeDef node.Spec) error {
 			return err
 		}
 	}
-	if err := validateNodeOutputs(nodeDef.Type, nodeDef.Outputs); err != nil {
+	if err := validateNodeOutputs(nodeDef.Type, nodeDef.OutputHandles); err != nil {
 		return err
 	}
 	return nil
@@ -112,35 +112,19 @@ func validateNodeFields(nodeType string, fields []node.NodeField) error {
 	return nil
 }
 
-func validateNodeOutputs(nodeType string, outputs []node.HandleEdge) error {
+func validateNodeOutputs(nodeType string, outputs []string) error {
 	if len(outputs) == 0 {
 		return fmt.Errorf("plugin node '%s': must have at least one output", nodeType)
 	}
-	validTones := map[string]bool{
-		"success": true,
-		"error":   true,
-		"warning": true,
-		"info":    true,
-		"neutral": true,
-	}
-	seenKeys := make(map[string]bool)
+	seen := make(map[string]bool)
 	for i, output := range outputs {
-		if output.Key == "" {
-			return fmt.Errorf("plugin node '%s' output[%d]: key is required", nodeType, i)
+		if output == "" {
+			return fmt.Errorf("plugin node '%s' output[%d]: must not be empty string", nodeType, i)
 		}
-		if seenKeys[output.Key] {
-			return fmt.Errorf("plugin node '%s': duplicate output key '%s'", nodeType, output.Key)
+		if seen[output] {
+			return fmt.Errorf("plugin node '%s': duplicate output '%s'", nodeType, output)
 		}
-		seenKeys[output.Key] = true
-		if output.Label == "" {
-			return fmt.Errorf("plugin node '%s' output '%s': label is required", nodeType, output.Key)
-		}
-		if output.Tone == "" {
-			return fmt.Errorf("plugin node '%s' output '%s': tone is required", nodeType, output.Key)
-		}
-		if !validTones[output.Tone] {
-			return fmt.Errorf("plugin node '%s' output '%s': invalid tone '%s' (must be one of: success, error, warning, info, neutral)", nodeType, output.Key, output.Tone)
-		}
+		seen[output] = true
 	}
 	return nil
 }

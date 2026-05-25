@@ -5,11 +5,11 @@ import (
 	"testing"
 )
 
-// TestDependencyTracker_MemoryLeak membuktikan dua hal:
-//  1. Tanpa ClearWorkflow → data menumpuk (leak terdokumentasi)
-//  2. Dengan ClearWorkflow → data bersih setelah setiap workflow selesai (fix verified)
+// TestDependencyTracker_MemoryLeak verifies two things:
+//  1. Without ClearWorkflow, dependency data accumulates.
+//  2. With ClearWorkflow, dependency data is cleaned after each workflow.
 func TestDependencyTracker_MemoryLeak(t *testing.T) {
-	t.Run("leak terjadi tanpa cleanup", func(t *testing.T) {
+	t.Run("leak occurs without cleanup", func(t *testing.T) {
 		tracker := NewDependencyTracker()
 
 		for i := range 10 {
@@ -17,7 +17,7 @@ func TestDependencyTracker_MemoryLeak(t *testing.T) {
 			for j := range 5 {
 				tracker.RecordExecuted(wfID, fmt.Sprintf("node_%d", j), "run")
 			}
-			// Sengaja TIDAK memanggil ClearWorkflow — simulasi kondisi lama
+			// Intentionally skip ClearWorkflow to simulate the old lifecycle.
 		}
 
 		tracker.mu.RLock()
@@ -25,13 +25,13 @@ func TestDependencyTracker_MemoryLeak(t *testing.T) {
 		tracker.mu.RUnlock()
 
 		if liveEntries == 0 {
-			t.Error("Harusnya ada leak tanpa cleanup, tapi map kosong — test setup salah")
+			t.Error("expected a leak without cleanup, but the map is empty; test setup is wrong")
 		} else {
-			t.Logf("Terkonfirmasi: %d workflow ID masih di memori tanpa ClearWorkflow", liveEntries)
+			t.Logf("confirmed: %d workflow IDs remain in memory without ClearWorkflow", liveEntries)
 		}
 	})
 
-	t.Run("tidak ada leak setelah ClearWorkflow dipanggil", func(t *testing.T) {
+	t.Run("no leak after ClearWorkflow is called", func(t *testing.T) {
 		tracker := NewDependencyTracker()
 
 		totalWorkflows := 100
@@ -41,7 +41,7 @@ func TestDependencyTracker_MemoryLeak(t *testing.T) {
 			for j := range 10 {
 				tracker.RecordExecuted(wfID, fmt.Sprintf("node_type_%d", j), "run")
 			}
-			// Simulasi lifecycle yang benar: cleanup setelah workflow selesai
+			// Simulate the correct lifecycle: clean up after the workflow finishes.
 			tracker.ClearWorkflow(wfID)
 		}
 
@@ -53,13 +53,13 @@ func TestDependencyTracker_MemoryLeak(t *testing.T) {
 		}
 		tracker.mu.RUnlock()
 
-		t.Logf("Workflow ID di memori setelah %d run: %d", totalWorkflows, liveEntries)
-		t.Logf("Total DepRecord tersisa: %d", totalRecords)
+		t.Logf("Workflow IDs in memory after %d runs: %d", totalWorkflows, liveEntries)
+		t.Logf("Remaining DepRecord total: %d", totalRecords)
 
 		if liveEntries != 0 {
-			t.Errorf("Masih ada leak: %d workflow ID dan %d record tidak dibersihkan", liveEntries, totalRecords)
+			t.Errorf("leak remains: %d workflow IDs and %d records were not cleaned", liveEntries, totalRecords)
 		} else {
-			t.Log("Fix verified: tidak ada data yang tersisa setelah semua workflow selesai")
+			t.Log("Fix verified: no data remains after all workflows finish")
 		}
 	})
 }

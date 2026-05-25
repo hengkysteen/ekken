@@ -43,13 +43,15 @@ func init() {
 					},
 				},
 			},
-			Outputs: []node.HandleEdge{{Key: "success", Label: "Success"}}},
+			OutputHandles: []string{"success"},
+		},
 
 		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &DelayNode{Action: action}
 		},
 	})
 }
+
 func (n *DelayNode) Execute(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
 	seconds, ok := node.FieldValue(n.Action, "duration").(float64)
 	if !ok {

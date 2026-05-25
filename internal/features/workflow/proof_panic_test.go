@@ -6,14 +6,14 @@ import (
 	"testing"
 )
 
-// TestRunner_NoPanicRecovery membuktikan bahwa jika ada node yang panic,
-// seluruh runtime akan crash (test akan fail dengan exit code non-zero).
+// TestRunner_NoPanicRecovery verifies that node panics are recovered and
+// returned as regular execution errors.
 func TestRunner_NoPanicRecovery(t *testing.T) {
-	// 1. Buat node executor yang sengaja memicu panic
+	// 1. Create a node executor that deliberately panics.
 	panicExecutor := &MockExecutor{
 		ExecuteFunc: func(ctx *node.NodeContext) (node.NodeExecutionResult, error) {
-			// Sengaja trigger panic (misal: simulasi nil pointer di chromedp)
-			panic("Simulasi fatal error dari node eksternal!")
+			// Deliberately trigger a panic, such as a simulated nil pointer in chromedp.
+			panic("simulated fatal error from external node")
 		},
 	}
 
@@ -32,14 +32,13 @@ func TestRunner_NoPanicRecovery(t *testing.T) {
 		},
 	}
 
-	// 2. Jalankan workflow.
-	// Jika sistem memiliki Panic Recovery (defer recover), fungsi ini akan return error.
-	// Jika tidak, test runner Go ini akan CRASH dan berhenti total.
+	// 2. Run the workflow.
+	// With panic recovery, this returns an error instead of crashing the test runner.
 	err := eng.Run(context.Background(), wf)
 
-	// Jika kode sampai ke baris ini, berarti panic berhasil ditangani (recovered).
+	// Reaching this line means the panic was recovered.
 	if err == nil {
 		t.Fatal("Expected an error from panic recovery, got nil")
 	}
-	t.Log("Panic berhasil di-recover, test lewat:", err)
+	t.Log("Panic recovered successfully:", err)
 }

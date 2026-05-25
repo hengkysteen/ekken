@@ -9,7 +9,7 @@ func TestWorkflowEventStream_Individual(t *testing.T) {
 	sse := NewWorkflowEventStream()
 	wfID := "wf-1"
 
-	// Use Case: Multiple subscribers untuk satu workflow
+	// Use case: multiple subscribers for one workflow.
 	sub1ID, ch1 := sse.Subscribe(wfID)
 	sub2ID, ch2 := sse.Subscribe(wfID)
 
@@ -20,7 +20,7 @@ func TestWorkflowEventStream_Individual(t *testing.T) {
 	msg := SSEMessage{Type: "status", Data: "running"}
 	sse.Send(wfID, msg)
 
-	// Keduanya harus terima pesan yang sama
+	// Both subscribers should receive the same message.
 	for i, ch := range []<-chan SSEMessage{ch1, ch2} {
 		select {
 		case received := <-ch:
@@ -32,24 +32,24 @@ func TestWorkflowEventStream_Individual(t *testing.T) {
 		}
 	}
 
-	// Use Case: Unsubscribe (Pembersihan leak)
+	// Use case: unsubscribe cleanup.
 	sse.Unsubscribe(wfID, sub1ID)
-	
-	// Kirim pesan lagi
+
+	// Send another message.
 	sse.Send(wfID, SSEMessage{Type: "status", Data: "updated"})
 
-	// ch1 tidak boleh terima (karena sudah unsubscribe)
+	// ch1 should not receive anything after unsubscribe.
 	select {
 	case msg := <-ch1:
 		t.Errorf("Sub1 should not receive message after unsubscribe, got %v", msg)
 	case <-time.After(50 * time.Millisecond):
-		// Berhasil (tidak terima apa-apa)
+		// Success: no message received.
 	}
 
-	// ch2 tetap harus terima
+	// ch2 should still receive messages.
 	select {
 	case <-ch2:
-		// Berhasil
+		// Success.
 	case <-time.After(100 * time.Millisecond):
 		t.Error("Sub2 should still receive message")
 	}
@@ -96,26 +96,26 @@ func TestWorkflowEventStream_NonBlocking(t *testing.T) {
 	sse := NewWorkflowEventStream()
 	wfID := "wf-block-test"
 
-	// Sub 1: Channel-nya kita penuhi supaya memblokir (buffer size is 64)
+	// Sub 1: fill this channel so it blocks.
 	_, _ = sse.Subscribe(wfID)
-	
-	// Sub 2: Channel normal
+
+	// Sub 2: normal channel.
 	_, ch2 := sse.Subscribe(wfID)
 
-	// Penuhi ch1 sampai mentok (64 pesan)
+	// Fill ch1 with enough messages to exercise the non-blocking send path.
 	for i := 0; i < 64; i++ {
 		sse.Send(wfID, SSEMessage{Type: "fill", Data: i})
 	}
 
-	// Kuras ch2 supaya dia kosong lagi, tapi biarkan ch1 tetap penuh
+	// Drain ch2 so it is empty again, while leaving ch1 full.
 	for i := 0; i < 64; i++ {
 		<-ch2
 	}
 
-	// Sekarang: ch1 PENUH, ch2 KOSONG
+	// ch1 is full and ch2 is empty.
 	testMsg := SSEMessage{Type: "important", Data: "must_reach_ch2"}
-	
-	// Ini tidak boleh nge-hang/blocking karena ada 'default' di select Send
+
+	// This must not hang because Send uses a default case in its select.
 	done := make(chan bool)
 	go func() {
 		sse.Send(wfID, testMsg)
@@ -124,12 +124,12 @@ func TestWorkflowEventStream_NonBlocking(t *testing.T) {
 
 	select {
 	case <-done:
-		// Berhasil, Send tidak memblokir
+		// Success: Send did not block.
 	case <-time.After(500 * time.Millisecond):
 		t.Fatal("Send blocked when one channel was full!")
 	}
 
-	// ch2 harus tetap terima pesan terakhir meskipun ch1 penuh
+	// ch2 should still receive the latest message even when ch1 is full.
 	receivedAny := false
 	// Drain ch2 to find our important message
 	for i := 0; i < 66; i++ { // Check up to 66 to be safe
@@ -154,7 +154,7 @@ func TestWorkflowEventStream_Finish(t *testing.T) {
 
 	sse.Finish(id)
 
-	// Channel harus tertutup
+	// The channel should be closed.
 	select {
 	case _, ok := <-ch:
 		if ok {

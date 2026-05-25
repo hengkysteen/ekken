@@ -109,8 +109,8 @@ export function buildActionInstance(def?: NodeDefinition, actionType?: string): 
   return action
 }
 
-export function calculateNodeOutputs(_type: string, _action: any, def?: NodeDefinition): any[] {
-  return def?.outputs || []
+export function calculateNodeOutputHandles(_type: string, _action: any, def?: NodeDefinition): string[] {
+  return def?.output_handles || []
 }
 
 export function buildNodeData(
@@ -125,16 +125,26 @@ export function buildNodeData(
     action = serializeActionForSave(action)
   }
 
-  const outputs = calculateNodeOutputs(node.type!, action, def)
+  const outputHandles = calculateNodeOutputHandles(node.type!, action, def)
   const actionBlueprint = getActionBlueprint(def, getActionType(action))
+  const storedVersion = node.version
+  const installedVersion = def?.version
+  const version = storedVersion || installedVersion || ''
+  const needsReview = !!storedVersion && !!installedVersion && storedVersion !== installedVersion
 
   return {
-    label: node._label || node.label || def?.label || node.type,
+    label: node._label || def?.label || node.label || node.type,
     nodeType: node.type,
-    tags: node._tags || node.tags || def?.tags || [],
-    icon: node._icon || node.icon || def?.icon || '',
+    version,
+    installedVersion,
+    needsReview,
+    platforms: def?.platforms || node.platforms || [],
+    description: def?.description || node.description || '',
+    tags: node._tags || def?.tags || node.tags || [],
+    icon: node._icon || def?.icon || node.icon || '',
     action: action,
-    outputs: outputs,
+    output_handles: outputHandles,
+    hide_input_handles: def?.hide_input_handles || false,
     action_has_response: actionBlueprint?.has_response ?? false,
     id: node.id,
     name: node.name,

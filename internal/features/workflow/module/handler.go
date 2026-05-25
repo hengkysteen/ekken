@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 
@@ -262,6 +263,6 @@ func (h *WorkflowHandler) SSEStream(c *gin.Context) {
 }
 
 func (h *WorkflowHandler) NodeCatalog(c *gin.Context) {
-	regs := node.GlobalRegistry.AllSpecs()
+	regs := node.GlobalRegistry.AllSpecsForPlatform(runtime.GOOS)
 	c.JSON(http.StatusOK, api.Response{OK: true, Data: regs})
 }

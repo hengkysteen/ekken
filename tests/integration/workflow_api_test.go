@@ -17,7 +17,7 @@ import (
 func setupTestEnvironment(t *testing.T) (*api.Server, *db.DB, func()) {
 	tempDir, err := os.MkdirTemp("", "ekken_test_*")
 	if err != nil {
-		t.Fatalf("Gagal membuat temp dir: %v", err)
+		t.Fatalf("Failed to create temp dir: %v", err)
 	}
 	cfg := config.Config{
 		DataDir: tempDir,
@@ -26,7 +26,7 @@ func setupTestEnvironment(t *testing.T) (*api.Server, *db.DB, func()) {
 	}
 	database, err := db.Open(cfg.DataDir)
 	if err != nil {
-		t.Fatalf("Gagal membuka DB test: %v", err)
+		t.Fatalf("Failed to open test database: %v", err)
 	}
 	server := api.NewServer(cfg, database)
 	cleanup := func() {
@@ -53,7 +53,7 @@ func TestIntegration_CreateWorkflowAPI(t *testing.T) {
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	if err != nil {
-		t.Fatalf("Gagal parse response JSON: %v", err)
+		t.Fatalf("Failed to parse response JSON: %v", err)
 	}
 	if response["ok"] != true {
 		t.Errorf("Expected response ok to be true, got %v", response["ok"])

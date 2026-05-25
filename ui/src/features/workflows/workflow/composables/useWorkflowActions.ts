@@ -2,7 +2,7 @@ import { type Ref } from 'vue'
 import { type Node, type XYPosition } from '@vue-flow/core'
 import type { Workflow } from '@workflows/workflow/api'
 import type { WorkflowNode } from '@workflows/node/types/node'
-import { generateNodeId, buildActionInstance, calculateNodeOutputs, buildNodeData, serializeActionForSave } from '@workflows/node/utils/node'
+import { generateNodeId, buildActionInstance, calculateNodeOutputHandles, buildNodeData, serializeActionForSave } from '@workflows/node/utils/node'
 import { getVueFlowType } from '@workflows/workflow/utils/vueFlowUtils'
 import { useNodeStore } from '@workflows/node/stores/node'
 
@@ -59,6 +59,7 @@ export function useWorkflowActions(
       data: buildNodeData({
         id,
         type,
+        version: rawNode.version,
         action: finalAction,
         tags: rawNode.tags,
         label: rawNode.label,
@@ -124,14 +125,22 @@ export function useWorkflowActions(
       if (label) flowNode.data.label = label
 
       const def = nodeStore.findDef(flowNode.data.nodeType)
+      if (def?.version) {
+        flowNode.data.version = def.version
+        flowNode.data.installedVersion = def.version
+        flowNode.data.needsReview = false
+      }
       flowNode.data.action_has_response = def?.actions?.find(a => a.type === flowNode.data.action?.type)?.has_response ?? false
-      flowNode.data.outputs = calculateNodeOutputs(flowNode.data.nodeType, flowNode.data.action, def)
+      flowNode.data.output_handles = calculateNodeOutputHandles(flowNode.data.nodeType, flowNode.data.action, def)
+      flowNode.data.hide_input_handles = def?.hide_input_handles || false
     }
 
     const rawNode = workflow.value?.nodes?.find((n) => n.id === id)
     if (rawNode) {
       rawNode.action = savedAction
       if (label) rawNode.label = label
+      const def = nodeStore.findDef(rawNode.type)
+      if (def?.version) rawNode.version = def.version
     }
   }
 
@@ -164,6 +173,7 @@ export function useWorkflowActions(
       label: sourceNode.data.label,
       tags: sourceNode.data.tags || [],
       icon: sourceNode.data.icon || '',
+      version: sourceNode.data.version,
       action: newAction,
     }
 

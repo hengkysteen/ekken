@@ -7,6 +7,8 @@ import (
 
 type Meta struct {
 	Type        string      `json:"type"`
+	Version     string      `json:"version,omitempty"`
+	Platforms   []string    `json:"platforms,omitempty"`
 	Label       string      `json:"label,omitempty"`
 	Description string      `json:"description,omitempty"`
 	Icon        string      `json:"icon,omitempty"`
@@ -15,11 +17,13 @@ type Meta struct {
 }
 type Spec struct {
 	Meta
-	Actions       []Action     `json:"actions"`
-	DefaultAction string       `json:"default_action,omitempty"`
-	GlobalFields  []NodeField  `json:"global_fields,omitempty"`
-	Outputs       []HandleEdge `json:"outputs,omitempty"`
+	Actions         []Action    `json:"actions"`
+	DefaultAction   string      `json:"default_action,omitempty"`
+	GlobalFields    []NodeField `json:"global_fields,omitempty"`
+	OutputHandles   []string    `json:"output_handles"`
+	HideInputHandle bool        `json:"hide_input_handles"`
 }
+
 type NodeField struct {
 	Key      string `json:"key"`
 	Type     string `json:"type,omitempty"`
@@ -103,11 +107,6 @@ type NodeExecutionResult struct {
 	Handle   string            `json:"handle"`
 	Response any               `json:"response"`
 	Type     *NodeResponseType `json:"type,omitempty"`
-}
-type HandleEdge struct {
-	Key   string `json:"key"`
-	Label string `json:"label"`
-	Tone  string `json:"tone"`
 }
 
 var (

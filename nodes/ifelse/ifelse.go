@@ -54,10 +54,7 @@ func init() {
 					},
 				},
 			},
-			Outputs: []node.HandleEdge{
-				{Key: "true", Label: "True", Tone: "success"},
-				{Key: "false", Label: "False", Tone: "warning"},
-			},
+			OutputHandles: []string{"true", "false"},
 		},
 		ExecutorFactory: func(action node.Action) node.NodeExecutor {
 			return &IfElseNode{Action: action}

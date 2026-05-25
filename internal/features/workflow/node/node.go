@@ -3,8 +3,11 @@ package node
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"sync"
 )
+
+const DefaultSpecVersion = "1.0.0"
 
 // NodeProvider defines the interface required by the engine to resolve nodes.
 type NodeProvider interface {
@@ -31,6 +34,9 @@ var GlobalRegistry = NewRegistry()
 
 func (r *Registry) Register(reg NodeRegistration) {
 	spec := reg.Spec
+	if strings.TrimSpace(spec.Version) == "" {
+		spec.Version = DefaultSpecVersion
+	}
 
 	// Auto-fill ResponseVar for actions that have HasResponse
 	for i, action := range spec.Actions {
@@ -96,6 +102,29 @@ func (r *Registry) AllSpecs() []Spec {
 	})
 
 	return result
+}
+
+func (r *Registry) AllSpecsForPlatform(goos string) []Spec {
+	specs := r.AllSpecs()
+	result := specs[:0]
+	for _, spec := range specs {
+		if IsPlatformSupported(spec.Platforms, goos) {
+			result = append(result, spec)
+		}
+	}
+	return result
+}
+
+func IsPlatformSupported(platforms []string, goos string) bool {
+	if len(platforms) == 0 {
+		return true
+	}
+	for _, platform := range platforms {
+		if platform == goos {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Registry) GetExecutor(nodeType string, action Action) NodeExecutor {
