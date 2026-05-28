@@ -118,7 +118,7 @@ func TestFilterMessagesForDisplay_MergeAssistantToolLoopSession(t *testing.T) {
 		{ID: "msg_1", Role: "user", Content: "Create workflow", IsSystem: false},
 		{ID: "msg_2", Role: "assistant", Content: "I'll check nodes.\n\n~ekken skill nodes ekken~", IsSystem: false},
 		{ID: "msg_3", Role: "user", Content: "[SYSTEM][SKILL_RESULT]: nodes data", IsSystem: true},
-		{ID: "msg_4", Role: "assistant", Content: "Now I'll create it.\n\n~ekken skill create_workflow\nname: test\nekken~", IsSystem: false},
+		{ID: "msg_4", Role: "assistant", Content: "Now I'll create it.\n\n~ekken skill draft_workflow\nname: test\nekken~", IsSystem: false},
 		{ID: "msg_5", Role: "user", Content: "[SYSTEM][SKILL_RESULT]: created", IsSystem: true},
 		{ID: "msg_6", Role: "assistant", Content: "I'll check nodes.\n\nNow I'll create it.\n\nWorkflow created successfully.", Thinking: "reasoning 1\n\nreasoning 2", IsSystem: false},
 		{ID: "msg_7", Role: "user", Content: "simpan", IsSystem: false},

@@ -1,15 +1,31 @@
 package assistant
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 )
+
+var (
+	globalModelManager   *ModelManager
+	globalModelManagerMu sync.RWMutex
+)
+
+func GetGlobalModelManager() *ModelManager {
+	globalModelManagerMu.RLock()
+	defer globalModelManagerMu.RUnlock()
+	return globalModelManager
+}
+
+func setGlobalModelManager(m *ModelManager) {
+	globalModelManagerMu.Lock()
+	defer globalModelManagerMu.Unlock()
+	globalModelManager = m
+}
 
 func NewModelManager(dataDir string) (*ModelManager, error) {
 	path := filepath.Join(dataDir, "models.json")
@@ -22,6 +38,8 @@ func NewModelManager(dataDir string) (*ModelManager, error) {
 	if err := m.Load(); err != nil {
 		slog.Error("Failed to load models.json, using internal defaults", "error", err, "path", path)
 	}
+
+	setGlobalModelManager(m)
 
 	return m, nil
 }
@@ -131,31 +149,96 @@ func (m *ModelManager) GetModels(providerID string) []ModelInfo {
 	return result
 }
 
-func (m *ModelManager) SyncFromRegistry(url string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("registry error: %d", resp.StatusCode)
-	}
-
-	var registryConfig ModelConfig
-	if err := json.NewDecoder(resp.Body).Decode(&registryConfig); err != nil {
-		return err
-	}
-
+func (m *ModelManager) RegisterPluginModels(providerID string, models []ModelEntry) error {
 	m.mu.Lock()
-	m.config.Date = registryConfig.Date
-	m.config.System = registryConfig.System
-	err = m.saveLocked()
-	m.mu.Unlock()
+	defer m.mu.Unlock()
 
-	return err
+	foundIndex := -1
+	for i, p := range m.config.System {
+		if p.Provider == providerID {
+			foundIndex = i
+			break
+		}
+	}
+
+	if foundIndex == -1 {
+		m.config.System = append(m.config.System, ProviderModels{
+			Provider: providerID,
+			Models:   models,
+		})
+		return m.saveLocked()
+	}
+
+	existingModels := m.config.System[foundIndex].Models
+	existingMap := make(map[string]bool)
+	for _, model := range existingModels {
+		existingMap[model.Origin] = true
+	}
+
+	appended := false
+	for _, newModel := range models {
+		if !existingMap[newModel.Origin] {
+			m.config.System[foundIndex].Models = append(m.config.System[foundIndex].Models, newModel)
+			appended = true
+		}
+	}
+
+	if appended {
+		return m.saveLocked()
+	}
+
+	return nil
+}
+
+func (m *ModelManager) SyncWithEmbeddedDefaults(force bool) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var defaults []ProviderModels
+	for _, typeName := range RegisteredTypes() {
+		models := GetDefaultModels(typeName)
+		if len(models) > 0 {
+			pModels := ProviderModels{
+				Provider: typeName,
+				Models:   make([]ModelEntry, len(models)),
+			}
+			for i, mod := range models {
+				pModels.Models[i] = ModelEntry(mod)
+			}
+			defaults = append(defaults, pModels)
+		}
+	}
+
+	if force {
+		m.config.System = defaults
+	} else {
+		for _, defProv := range defaults {
+			foundIndex := -1
+			for i, sysProv := range m.config.System {
+				if sysProv.Provider == defProv.Provider {
+					foundIndex = i
+					break
+				}
+			}
+
+			if foundIndex == -1 {
+				m.config.System = append(m.config.System, defProv)
+			} else {
+				existingModels := m.config.System[foundIndex].Models
+				existingMap := make(map[string]bool)
+				for _, model := range existingModels {
+					existingMap[model.Origin] = true
+				}
+
+				for _, defModel := range defProv.Models {
+					if !existingMap[defModel.Origin] {
+						m.config.System[foundIndex].Models = append(m.config.System[foundIndex].Models, defModel)
+					}
+				}
+			}
+		}
+	}
+
+	m.config.Date = time.Now().Format("2006-01-02")
+	return m.saveLocked()
 }

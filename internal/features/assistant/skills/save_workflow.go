@@ -48,7 +48,8 @@ func (s *SaveWorkflow) Execute(args map[string]interface{}) (string, error) {
 	}
 
 	// 2. Read the temp json workflow file
-	jsonPath := filepath.Join(dataDir, "temp", "workflows", fmt.Sprintf("%s.json", tempID))
+	tempDir := filepath.Join(dataDir, "temp", "workflows")
+	jsonPath := filepath.Join(tempDir, fmt.Sprintf("%s.json", tempID))
 	jsonBytes, err := os.ReadFile(jsonPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read temporary JSON workflow for ID '%s': %w", tempID, err)
@@ -82,7 +83,21 @@ func (s *SaveWorkflow) Execute(args map[string]interface{}) (string, error) {
 		return "", fmt.Errorf("failed to save workflow: %s", result.Error)
 	}
 
+	if err := removeTempWorkflowFiles(tempDir, tempID); err != nil {
+		return "", err
+	}
+
 	return fmt.Sprintf("Workflow '%s' saved successfully. inform the user and stop.", result.Data.Name), nil
+}
+
+func removeTempWorkflowFiles(tempDir, tempID string) error {
+	for _, ext := range []string{".json", ".yaml"} {
+		path := filepath.Join(tempDir, fmt.Sprintf("%s%s", tempID, ext))
+		if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove temporary workflow file %s: %w", path, err)
+		}
+	}
+	return nil
 }
 
 func init() {

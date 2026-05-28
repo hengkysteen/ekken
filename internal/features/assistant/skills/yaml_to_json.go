@@ -15,6 +15,14 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
+const (
+	defaultLayoutColumns = 5
+	defaultLayoutStartX  = 39.0
+	defaultLayoutStartY  = 84.5
+	defaultLayoutGapX    = 300.0
+	defaultLayoutGapY    = 220.0
+)
+
 // YamlToJSON converts a YAML workflow string to a validated JSON workflow string conformant to the core engine.
 func YamlToJSON(yamlStr string) (string, error) {
 	var args map[string]interface{}
@@ -137,6 +145,8 @@ func ConvertToInternal(args map[string]interface{}, out *workflow.Workflow) erro
 		out.Nodes = append(out.Nodes, engineNode)
 	}
 
+	applyDefaultPositions(out)
+
 	// 3. Map Edges
 	if edgesRaw, ok := args["edges"]; ok {
 		edgesList, ok := edgesRaw.([]interface{})
@@ -171,6 +181,23 @@ func ConvertToInternal(args map[string]interface{}, out *workflow.Workflow) erro
 	}
 
 	return nil
+}
+
+func applyDefaultPositions(out *workflow.Workflow) {
+	if len(out.Nodes) == 0 || len(out.Positions) > 0 {
+		return
+	}
+
+	out.Positions = make(map[string]node.Position, len(out.Nodes))
+	for idx, n := range out.Nodes {
+		col := idx % defaultLayoutColumns
+		row := idx / defaultLayoutColumns
+
+		out.Positions[n.ID] = node.Position{
+			X: defaultLayoutStartX + float64(col)*defaultLayoutGapX,
+			Y: defaultLayoutStartY + float64(row)*defaultLayoutGapY,
+		}
+	}
 }
 
 // ValidateWorkflow validates a Workflow struct against the backend validation API.

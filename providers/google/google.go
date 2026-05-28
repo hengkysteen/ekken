@@ -30,8 +30,9 @@ func init() {
 			},
 		}
 	}, []assistant.ModelEntry{
-		{Name: "Gemini 3.1 Flash-Lite (Preview)", Origin: "gemini-3.1-flash-lite-preview", ContextWindow: 1048576},
-		{Name: "Gemini 2.5 Flash-Lite", Origin: "gemini-2.5-flash-lite", ContextWindow: 1048576},
+		{Name: "Gemini 3.5 Flash", Origin: "gemini-3.5-flash", ContextWindow: 1048576},
+		{Name: "Gemini 3.1 Pro Preview", Origin: "gemini-3.1-pro-preview", ContextWindow: 1048576},
+		{Name: "Gemini 3.1 Flash Lite", Origin: "gemini-3.1-flash-lite", ContextWindow: 1048576},
 	})
 }
 

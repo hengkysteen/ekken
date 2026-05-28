@@ -1,4 +1,4 @@
-package nvidia
+package stepfun
 
 import (
 	"bytes"
@@ -12,33 +12,32 @@ import (
 	"ekken/providers/common"
 )
 
-type NvidiaProvider struct {
+type StepFunProvider struct {
 	assistant.BaseProvider
 }
 
 func init() {
-	assistant.Register("nvidia", func() assistant.IProvider {
-		return &NvidiaProvider{
+	assistant.Register("stepfun", func() assistant.IProvider {
+		return &StepFunProvider{
 			BaseProvider: assistant.BaseProvider{
-				ID:           "nvidia",
-				Name:         "NVIDIA NIM",
-				Logo:         "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/nvidia-nemotron/default.svg",
-				BaseURL:      "https://integrate.api.nvidia.com/v1",
-				OfficialURL:  "https://build.nvidia.com/",
+				ID:           "stepfun",
+				Name:         "StepFun",
+				Logo:         "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/stepfun/default.svg",
+				BaseURL:      "https://api.stepfun.ai/v1",
+				OfficialURL:  "https://platform.stepfun.ai",
 				ConfigFields: []string{"API_KEY"},
 			},
 		}
 	}, []assistant.ModelEntry{
-		{Name: "GPT-OSS 120B", Origin: "openai/gpt-oss-120b", ContextWindow: 131072},
-		{Name: "Minimax M2.7", Origin: "minimaxai/minimax-m2.7", ContextWindow: 131072},
-		{Name: "DeepSeek V4 Flash", Origin: "deepseek-ai/deepseek-v4-flash", ContextWindow: 256000},
+		{Name: "Step 3.5 Flash", Origin: "step-3.5-flash", ContextWindow: 262144},
+		{Name: "Step 3.7 Flash", Origin: "step-3.7-flash", ContextWindow: 262144},
 	})
 }
 
-func (p *NvidiaProvider) Chat(ctx context.Context, req assistant.ChatRequest, listener assistant.StreamListener) (assistant.MessageContent, error) {
+func (p *StepFunProvider) Chat(ctx context.Context, req assistant.ChatRequest, listener assistant.StreamListener) (assistant.MessageContent, error) {
 	apiKey := p.Config["API_KEY"]
 	if apiKey == "" {
-		return assistant.MessageContent{}, fmt.Errorf("NVIDIA NIM is not configured (API_KEY missing)")
+		return assistant.MessageContent{}, fmt.Errorf("StepFun is not configured (API_KEY missing)")
 	}
 
 	payload := common.NewOpenAIPayload(req)
@@ -64,7 +63,7 @@ func (p *NvidiaProvider) Chat(ctx context.Context, req assistant.ChatRequest, li
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return assistant.MessageContent{}, fmt.Errorf("NVIDIA API Error (%d): %s", resp.StatusCode, string(body))
+		return assistant.MessageContent{}, fmt.Errorf("StepFun API Error (%d): %s", resp.StatusCode, string(body))
 	}
 
 	if req.Stream {

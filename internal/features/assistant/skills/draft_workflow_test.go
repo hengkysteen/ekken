@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func TestCreateWorkflow(t *testing.T) {
+func TestDraftWorkflow(t *testing.T) {
 	// Test ini akan memanggil API asli yang sedang berjalan
-	skill := &CreateWorkflow{}
+	skill := &DraftWorkflow{}
 
 	args := map[string]any{
 		"name": "Test Workflow AI",

@@ -11,6 +11,7 @@ import {
   type Conversation
 } from '../api'
 import { Storage, StorageKeys } from '@shared/utils/storage'
+import { useGreetingStore } from './useGreetingStore'
 
 export interface Message {
   role: 'user' | 'assistant'
@@ -39,25 +40,12 @@ export const useAssistantStore = defineStore('assistant', () => {
   const activeProvider = ref('')
   const activeModel = ref('')
   const agents = ref<any[]>([])
-  const selectedAgent = ref('chat')
+  const selectedAgent = ref('workflow')
   const selectedThinking = ref('low')
-  const displayedPrefix = ref('')
-  const displayedMain = ref('')
   const enableTransition = ref(false)
-  const isTyping = ref(false)
   const sidebarCollapsed = ref(Storage.get<boolean>(StorageKeys.ASSISTANT_SIDEBAR_COLLAPSED) ?? false)
-  const nextGreetingIdx = ref(Storage.get<number>(StorageKeys.ASSISTANT_NEXT_GREETING) ?? 0)
   let streamController: AbortController | null = null
   let streamConversationId = ''
-
-  const greetings = [
-    { prefix: "Ahoy, Captain! 🏴‍☠️", main: "Give the word and I'll burn the seas for ya." },
-
-    { prefix: "Hi!", main: "Let's craft some powerful **node plugins** to expand your system's capabilities. 🔌" },
-    { prefix: "System Online.", main: "Ready to help you plan, architect, and bring your **modular ideas** to life. 🏗️" },
-    { prefix: "Welcome back!", main: "Need help with **logic nodes** or mapping out a new project structure? ✨" },
-    { prefix: "Hello there!", main: "My processors are ready. Let's optimize your **automation** and build something epic. 🚀" }
-  ]
 
   // Getters
   const isNewChat = (chatId: string) => !chatId && messages.value.length === 0
@@ -111,42 +99,16 @@ export const useAssistantStore = defineStore('assistant', () => {
       const res = await fetch('/api/assistant/agents')
       const json = await res.json()
       if (json.data?.length) {
-        agents.value = json.data
-        const names = json.data.map((a: any) => a.name)
+        // Filter agents to only allow 'workflow'
+        agents.value = json.data.filter((a: any) => a.name === 'workflow')
+        const names = agents.value.map((a: any) => a.name)
         if (!selectedAgent.value || !names.includes(selectedAgent.value)) {
-          selectedAgent.value = names[0]
+          selectedAgent.value = names[0] || 'workflow'
         }
       }
     } catch (e) {
       console.error('Failed to fetch agents:', e)
     }
-  }
-
-  const startTyping = async () => {
-    if (isTyping.value) return
-    isTyping.value = true;
-    const g = greetings[nextGreetingIdx.value];
-
-    // Increment for next time (Round Robin)
-    nextGreetingIdx.value = (nextGreetingIdx.value + 1) % greetings.length;
-    Storage.set(StorageKeys.ASSISTANT_NEXT_GREETING, nextGreetingIdx.value);
-
-    displayedPrefix.value = '';
-    displayedMain.value = '';
-
-    for (const char of g.prefix) {
-      displayedPrefix.value += char;
-      await new Promise(r => setTimeout(r, 45));
-    }
-
-    await new Promise(r => setTimeout(r, 150));
-
-    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-    for (const { segment } of segmenter.segment(g.main)) {
-      displayedMain.value += segment;
-      await new Promise(r => setTimeout(r, 25));
-    }
-    isTyping.value = false;
   }
 
   const closeActiveStream = () => {
@@ -290,7 +252,8 @@ export const useAssistantStore = defineStore('assistant', () => {
 
     if (!id) {
       initialized.value = true
-      startTyping()
+      const greetingStore = useGreetingStore()
+      greetingStore.startTyping()
       return
     }
 
@@ -424,8 +387,6 @@ export const useAssistantStore = defineStore('assistant', () => {
     initialized,
     activeProvider,
     activeModel,
-    displayedPrefix,
-    displayedMain,
     enableTransition,
     isNewChat,
     getChatTitle,
@@ -436,10 +397,8 @@ export const useAssistantStore = defineStore('assistant', () => {
     fetchAgents,
     loadConversation,
     sendMessage,
-    startTyping,
     setSidebarCollapsed,
     sidebarCollapsed,
-    isTyping,
     agents,
     selectedAgent,
     selectedThinking,

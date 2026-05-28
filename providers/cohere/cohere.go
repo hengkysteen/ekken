@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"strings"
 
-	"ekken/providers/common"
 	"ekken/internal/features/assistant"
+	"ekken/providers/common"
 )
 
 type CohereProvider struct {
@@ -23,7 +23,7 @@ func init() {
 			BaseProvider: assistant.BaseProvider{
 				ID:           "cohere",
 				Name:         "Cohere",
-				Logo:         "https://cdn.brandfetch.io/idCeGMHCBB/w/400/h/400/theme/dark/icon.png",
+				Logo:         "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/cohere/default.svg",
 				BaseURL:      "https://api.cohere.com/v2",
 				OfficialURL:  "https://dashboard.cohere.com/api-keys",
 				ConfigFields: []string{"API_KEY"},

@@ -7,4 +7,5 @@ import (
 	_ "ekken/providers/google"
 	_ "ekken/providers/nvidia"
 	_ "ekken/providers/ollama"
+	_ "ekken/providers/stepfun"
 )

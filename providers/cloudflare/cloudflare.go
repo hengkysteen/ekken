@@ -22,9 +22,9 @@ func init() {
 			BaseProvider: assistant.BaseProvider{
 				ID:           "cloudflare",
 				Name:         "Workers AI",
-				Logo:         "https://www.cloudflare.com/img/logo-cloudflare-dark.svg",
+				Logo:         "https://cdn.jsdelivr.net/gh/glincker/thesvg@main/public/icons/cloudflare-workers/default.svg",
 				BaseURL:      "https://api.cloudflare.com/client/v4/accounts/%s/ai/v1",
-				OfficialURL:  "dash.cloudflare.com",
+				OfficialURL:  "https://dash.cloudflare.com/",
 				ConfigFields: []string{"ACCOUNT_ID", "API_KEY"},
 			},
 		}

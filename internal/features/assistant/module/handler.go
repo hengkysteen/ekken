@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"ekken/internal/api"
 	"ekken/internal/config"
@@ -130,9 +129,25 @@ func (h *AssistantHandler) Providers(c *gin.Context) {
 	c.JSON(http.StatusOK, api.Response{OK: true, Data: catalog})
 }
 
+type providerWithModels struct {
+	assistant.Provider
+	Models []assistant.ModelInfo `json:"models"`
+}
+
 func (h *AssistantHandler) ListProviders(c *gin.Context) {
 	providers := assistant.ListProviders()
-	c.JSON(http.StatusOK, api.Response{OK: true, Data: providers})
+	resData := make([]providerWithModels, len(providers))
+	for i, p := range providers {
+		var models []assistant.ModelInfo
+		if h.Models != nil {
+			models = h.Models.GetModels(p.ID)
+		}
+		resData[i] = providerWithModels{
+			Provider: p,
+			Models:   models,
+		}
+	}
+	c.JSON(http.StatusOK, api.Response{OK: true, Data: resData})
 }
 
 func (h *AssistantHandler) ProviderModels(c *gin.Context) {
@@ -190,8 +205,8 @@ func (h *AssistantHandler) SyncModels(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, api.Response{OK: false, Error: "Model manager not initialized"})
 		return
 	}
-	registryURL := strings.Replace(h.Config.RepoURL, "github.com", "raw.githubusercontent.com", 1) + "/main/data/models.json"
-	if err := h.Models.SyncFromRegistry(registryURL); err != nil {
+	force := c.Query("force") == "true"
+	if err := h.Models.SyncWithEmbeddedDefaults(force); err != nil {
 		c.JSON(http.StatusInternalServerError, api.Response{OK: false, Error: err.Error()})
 		return
 	}

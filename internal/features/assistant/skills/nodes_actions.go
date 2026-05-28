@@ -187,6 +187,9 @@ func cleanNodeAction(action node.Action) map[string]interface{} {
 	}
 	if action.HasResponse {
 		cleanAction["has_response"] = true
+		if action.ResponseType != nil {
+			cleanAction["response_type"] = action.ResponseType
+		}
 		if action.ResponseVar != "" {
 			cleanAction["response_var"] = action.ResponseVar
 		}
@@ -210,6 +213,31 @@ func cleanNodeFields(fields []node.NodeField) []interface{} {
 		}
 		if field.Default != nil {
 			cleanField["default"] = field.Default
+		}
+		if field.Options != nil {
+			if optSlice, ok := field.Options.([]interface{}); ok {
+				var simplifiedOpts []interface{}
+				hasValueKey := false
+				for _, opt := range optSlice {
+					if optMap, ok := opt.(map[string]interface{}); ok {
+						if val, exists := optMap["value"]; exists {
+							simplifiedOpts = append(simplifiedOpts, val)
+							hasValueKey = true
+						} else {
+							simplifiedOpts = append(simplifiedOpts, opt)
+						}
+					} else {
+						simplifiedOpts = append(simplifiedOpts, opt)
+					}
+				}
+				if hasValueKey {
+					cleanField["options"] = simplifiedOpts
+				} else {
+					cleanField["options"] = field.Options
+				}
+			} else {
+				cleanField["options"] = field.Options
+			}
 		}
 
 		cleanFields = append(cleanFields, cleanField)

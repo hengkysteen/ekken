@@ -25,7 +25,12 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 import { deleteAllConversations } from '../api'
+import { useAssistantStore } from '../store/useAssistantStore'
+
+const router = useRouter()
+const store = useAssistantStore()
 
 async function handleDeleteAllConversations() {
   try {
@@ -42,6 +47,12 @@ async function handleDeleteAllConversations() {
     )
     
     await deleteAllConversations()
+    await store.fetchAllTitles()
+    
+    if (router.currentRoute.value.path.startsWith('/assistant')) {
+      router.push('/assistant')
+    }
+    
     ElMessage.success('All conversations deleted successfully')
   } catch (err) {
     if (err !== 'cancel' && err !== 'close') {

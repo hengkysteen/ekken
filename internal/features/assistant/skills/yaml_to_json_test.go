@@ -1,8 +1,9 @@
 package skills
 
 import (
-	"encoding/json"
+	"ekken/internal/features/workflow"
 	_ "ekken/nodes"
+	"encoding/json"
 	"testing"
 )
 
@@ -65,5 +66,38 @@ nodes:
 	}
 	if runShellNode.Action.Fields[0].Key != "command" || runShellNode.Action.Fields[0].Value != "echo \"hello\"" {
 		t.Errorf("expected field command: 'echo \"hello\"', got key '%s', value '%v'", runShellNode.Action.Fields[0].Key, runShellNode.Action.Fields[0].Value)
+	}
+}
+
+func TestConvertToInternal_DefaultPositionsWrapAfterFiveNodes(t *testing.T) {
+	args := map[string]interface{}{
+		"name": "Position test",
+		"nodes": []interface{}{
+			map[string]interface{}{"id": "hbt71", "action": "fs.write"},
+			map[string]interface{}{"id": "y7tuf", "action": "fs.write"},
+			map[string]interface{}{"id": "pcdlo", "action": "fs.write"},
+			map[string]interface{}{"id": "ajk51", "action": "fs.write"},
+			map[string]interface{}{"id": "h5vke", "action": "fs.write"},
+			map[string]interface{}{"id": "kuyi4", "action": "fs.write"},
+		},
+	}
+
+	var wf workflow.Workflow
+	if err := ConvertToInternal(args, &wf); err != nil {
+		t.Fatalf("failed to convert workflow: %v", err)
+	}
+
+	if len(wf.Positions) != 6 {
+		t.Fatalf("expected 6 positions, got %d", len(wf.Positions))
+	}
+
+	if got := wf.Positions["hbt71"]; got.X != 39 || got.Y != 84.5 {
+		t.Fatalf("unexpected first node position: %#v", got)
+	}
+	if got := wf.Positions["h5vke"]; got.X != 1239 || got.Y != 84.5 {
+		t.Fatalf("unexpected fifth node position: %#v", got)
+	}
+	if got := wf.Positions["kuyi4"]; got.X != 39 || got.Y != 304.5 {
+		t.Fatalf("unexpected sixth node position: %#v", got)
 	}
 }

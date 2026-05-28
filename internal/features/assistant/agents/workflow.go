@@ -17,7 +17,7 @@ func init() {
 			Skills: []skills.SkillInterface{
 				skills.Registry["nodes"],
 				skills.Registry["nodes_actions"],
-				skills.Registry["create_workflow"],
+				skills.Registry["draft_workflow"],
 				skills.Registry["save_workflow"],
 			},
 		}

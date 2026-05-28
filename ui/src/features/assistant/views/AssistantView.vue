@@ -19,21 +19,8 @@
               <el-col :xs="24" :sm="22" :md="20" :lg="18" :xl="16"
                 style="max-width: 800px; padding: 0 20px; width: 100%; min-width: 0; overflow: hidden;">
                 <div v-if="store.initialized">
-
-                  <!-- Welcome Hero -->
-                  <div v-if="isNewChat" style="margin-top: 15vh; text-align: left; min-height: 100px;">
-                    <el-space direction="vertical" :size="16" alignment="flex-start">
-                      <el-text tag="b" style="line-height: 1.5;">
-                        {{ store.displayedPrefix }}
-                      </el-text>
-                      <el-text tag="b" size="large" style="line-height: 1.5;">
-                        {{ store.displayedMain }}
-                      </el-text>
-                    </el-space>
-                  </div>
-
                   <!-- Message List -->
-                  <div v-else style="display: flex; flex-direction: column; gap: 24px;">
+                  <div v-if="!isNewChat" style="display: flex; flex-direction: column; gap: 24px;">
                     <ChatCard v-for="(msg, index) in store.messages" :key="index" :role="msg.role"
                       :content="msg.content" :thinking="msg.thinking" :provider="msg.provider" :model="msg.model"
                       :provider-logo="store.getProviderLogo(msg.provider)" :done="msg.done" :state="msg.state" />
@@ -48,6 +35,19 @@
           <el-row justify="center" style="width: 100%; margin: 0;">
             <el-col :xs="24" :sm="22" :md="20" :lg="18" :xl="16"
               style="max-width: 800px; padding: 0 20px; width: 100%;">
+
+              <!-- Welcome Hero (Tepat di atas ChatInput) -->
+              <div v-if="isNewChat && store.initialized" class="welcome-hero">
+                <el-space direction="vertical" :size="4" alignment="flex-start">
+                  <el-text tag="b" style="line-height: 1.5;">
+                    {{ greetingStore.displayedPrefix }}
+                  </el-text>
+                  <el-text tag="b" size="large" style="line-height: 1.5;">
+                    {{ greetingStore.displayedMain }}
+                  </el-text>
+                </el-space>
+              </div>
+
               <ChatInput ref="chatInput" v-model:provider="store.activeProvider" v-model:model="store.activeModel"
                 @send="handleSendMessage" @stop="store.stopAssistantChat(activeChatId)" />
             </el-col>
@@ -68,12 +68,14 @@ import ChatInput from '../components/ChatInput.vue'
 import AssistantSidebar from '../components/AssistantSidebar.vue'
 import AssistantProviders from '../components/AssistantProviders.vue'
 import { useAssistantStore } from '../store/useAssistantStore'
+import { useGreetingStore } from '../store/useGreetingStore'
 import AppPage from '@shared/components/AppPage.vue'
 
 
 const route = useRoute()
 const router = useRouter()
 const store = useAssistantStore()
+const greetingStore = useGreetingStore()
 
 const scrollBox = ref<any>(null)
 const chatInput = ref<any>(null)
@@ -167,5 +169,11 @@ const handleScroll = ({ scrollTop }: { scrollTop: number }) => {
   transform: translateY(-50%);
   padding-bottom: 0;
   background: transparent;
+}
+
+.welcome-hero {
+  margin-bottom: 12px;
+  text-align: left;
+  height: 90px;
 }
 </style>

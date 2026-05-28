@@ -13,15 +13,15 @@ import (
 	"github.com/goccy/go-yaml"
 )
 
-type CreateWorkflow struct{}
+type DraftWorkflow struct{}
 
-func (s *CreateWorkflow) GetID() string   { return "create_workflow" }
-func (s *CreateWorkflow) GetName() string { return "Create Workflow" }
-func (s *CreateWorkflow) GetDescription() string {
-	return "Create a temporary workflow from model description"
+func (s *DraftWorkflow) GetID() string   { return "draft_workflow" }
+func (s *DraftWorkflow) GetName() string { return "Draft Workflow" }
+func (s *DraftWorkflow) GetDescription() string {
+	return "Create a temporary workflow draft from model description"
 }
 
-func (s *CreateWorkflow) Execute(args map[string]any) (string, error) {
+func (s *DraftWorkflow) Execute(args map[string]any) (string, error) {
 	// 1. Ambil data dari model (args sudah diparse oleh detector sebagai map)
 
 	// 2. buat 2 variabel utk simpan data
@@ -54,10 +54,10 @@ func (s *CreateWorkflow) Execute(args map[string]any) (string, error) {
 		return "", err
 	}
 
-	return fmt.Sprintf("Workflow temporary created with ID: %s. Ask the user if they want to make any changes or save the workflow so they can run it in the editor.", tempID), nil
+	return fmt.Sprintf("Workflow draft created with ID: %s. Ask the user if they want to make any changes or save the workflow so they can run it in the editor.", tempID), nil
 }
 
-func (s *CreateWorkflow) saveTempWorkflow(id string, yamlContent string, jsonData any) error {
+func (s *DraftWorkflow) saveTempWorkflow(id string, yamlContent string, jsonData any) error {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Get(GetValidationAPIURL("/api/system/config"))
 	if err != nil {
@@ -108,5 +108,5 @@ func generateTempID() string {
 }
 
 func init() {
-	Register(&CreateWorkflow{})
+	Register(&DraftWorkflow{})
 }

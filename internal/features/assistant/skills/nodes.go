@@ -53,17 +53,18 @@ func (s *NodesList) Execute(args map[string]interface{}) (string, error) {
 	var sb strings.Builder
 
 	sb.WriteString(`
-This list is an index only. It contains node types and action types, not full field definitions.
-Before writing workflow node fields, call 'nodes_actions' for each action that will appear in the workflow.
+[INSTRUCTIONS]
+1. This list is a simple index (Node & Action types only), NOT full field definitions.
+2. CRITICAL: You MUST call the 'nodes_actions' skill to fetch the exact fields for each action before composing/modifying a workflow. NEVER assume or guess fields.
+3. Only set 'response_var' for actions that have 'has_response: true' in their details.
 
 Example:
-
 ~ekken skill nodes_actions
 actions:
-  - chromedp.navigate
-  - chromedp.click
-  - google_chrome.launch
+  - fs.write
+  - shell.execute
 ekken~
+
 
 `)
 

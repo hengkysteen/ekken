@@ -4,39 +4,23 @@
       <!-- Layout untuk Assistant -->
       <template v-if="role === 'assistant'">
         <div class="assistant-content-wrapper">
-
           <!-- Header: Provider & Model Info -->
           <el-space :size="6" alignment="center">
-            <el-icon size="24">
-              <app-logo color="grey" />
-            </el-icon>
+            <el-avatar style="background: transparent;" shape="circle" :size="16" :src="props.providerLogo" fit="fit" />
             <el-text type="info" size="small" strong>
               {{ provider?.toUpperCase() }} > {{ model?.toUpperCase() }}
             </el-text>
           </el-space>
-
-
           <!-- Content Body -->
           <div class="content-container">
-            <div v-if="props.thinking" class="thought-box">
-              <div class="thought-header" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11px; font-weight: 600; color: var(--el-text-color-placeholder); letter-spacing: 0.5px;">
-                <el-icon :class="{ 'is-loading': !props.done }" size="14"><Loading /></el-icon>
-                <span>THINKING</span>
-              </div>
-              <div class="markdown-body" v-html="renderedThinking" style="color: var(--el-text-color-placeholder); font-size: 13px;" />
-            </div>
-            <div v-if="state" class="state-text">⟳ {{ state }}</div>
+            <thinking-box :thinking="props.thinking" :done="props.done" />
+            <div v-if="state" class="state-text">{{ state }}</div>
             <div v-if="viewMode === 'markdown'" ref="markdownBodyRef" class="markdown-body" v-html="renderedContent" />
             <pre v-else class="raw-content">{{ content }}</pre>
           </div>
           <!-- Actions Footer (Visible on hover when done) -->
           <div v-if="done" class="chat-footer">
             <el-space :size="8">
-              <el-tooltip :content="viewMode === 'markdown' ? 'Switch to Raw' : 'Switch to Markdown'" placement="top">
-                <el-button circle size="small" :type="viewMode === 'raw' ? 'primary' : ''"
-                  :icon="viewMode === 'markdown' ? View : Document"
-                  @click="viewMode = viewMode === 'markdown' ? 'raw' : 'markdown'" />
-              </el-tooltip>
               <el-tooltip content="Copy Message" placement="top">
                 <el-button circle size="small" :icon="DocumentCopy" @click="copyToClipboard" />
               </el-tooltip>
@@ -60,9 +44,9 @@ import { marked } from 'marked'
 import hljs from 'highlight.js'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
-import { DocumentCopy, View, Document, Loading } from '@element-plus/icons-vue'
+import { DocumentCopy } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import AppLogo from '@/shared/components/AppLogo.vue'
+import ThinkingBox from './ThinkingBox.vue'
 const props = defineProps<{
   role: 'user' | 'assistant'
   content: string
@@ -115,8 +99,6 @@ const renderedContent = computed(() => {
   text = text.replace(/(\$\$|\\\[)([\s\S]+?)(\$\$|\\\])/g, (_, __, math) => addToken(math, true))
   text = text.replace(/((?<!\$)\$|\\\()([^$\n]+?)(\$(?!\$)|\\\))/g, (_, __, math) => addToken(math, false))
   let html = ''
-
-
   try {
     marked.setOptions({ gfm: true, breaks: true })
     html = marked.parse(text) as string
@@ -125,14 +107,6 @@ const renderedContent = computed(() => {
     html = html.split(token).join(tokenHtml)
   })
   return html
-})
-
-const renderedThinking = computed(() => {
-  if (!props.thinking) return ''
-  try {
-    marked.setOptions({ gfm: true, breaks: true })
-    return marked.parse(props.thinking) as string
-  } catch (e) { return props.thinking }
 })
 const applyHighlighting = async () => {
   await nextTick()
@@ -148,7 +122,6 @@ const applyHighlighting = async () => {
 }
 watch(renderedContent, () => { applyHighlighting() }, { immediate: true })
 </script>
-
 <style scoped>
 .state-text {
   font-size: 13px;
@@ -158,7 +131,14 @@ watch(renderedContent, () => { applyHighlighting() }, { immediate: true })
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 </style>

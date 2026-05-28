@@ -9,7 +9,7 @@ func TestGetNodeActions(t *testing.T) {
 	skill := &NodesActions{}
 
 	args := map[string]any{
-		"actions": []any{"shell"},
+		"actions": []any{"fs.write"},
 	}
 
 	result, err := skill.Execute(args)
